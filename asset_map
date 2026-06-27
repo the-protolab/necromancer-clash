@@ -14,35 +14,27 @@ const assets = {
     ]
   },
   "block_sword": {
-    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/images/block_sword_23711470-7f45-4bd0-b9f5-364ed7588779.webp",
+    "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782579075453_01KW4ZW6BXHMF5QK258C79R09G.block_sword.png",
     "type": "image",
     "aspect_ratio": [
-      904,
-      880
-    ]
-  },
-  "block_heart": {
-    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/images/block_heart_4ae14b13-073e-4ab2-86f5-734c9238803b.webp",
-    "type": "image",
-    "aspect_ratio": [
-      853,
-      840
+      807,
+      816
     ]
   },
   "block_shield": {
-    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/images/block_shield_61ad6e50-e1e8-4fce-8cc9-36bf8d916761.webp",
+    "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782579075314_01KW4ZW67JXE170E4E33MGY3R6.block_shield.png",
     "type": "image",
     "aspect_ratio": [
-      854,
-      839
+      807,
+      816
     ]
   },
   "block_ice": {
-    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/images/block_ice_132888fd-5f19-44c3-bc71-53b4443ed1ae.webp",
+    "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782579075055_01KW4ZW5ZFVM5E8SC2ASE0ZYPV.block_ice.png",
     "type": "image",
     "aspect_ratio": [
-      964,
-      955
+      807,
+      816
     ]
   },
   "battle_music": {
@@ -175,6 +167,14 @@ const assets = {
     "aspect_ratio": [
       512,
       512
+    ]
+  },
+  "block_heart": {
+    "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782580130836_01KW50WD0M4BC4T50BJWQCVJ4D.new_block_heart.png",
+    "type": "image",
+    "aspect_ratio": [
+      807,
+      816
     ]
   }
 };
