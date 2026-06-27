@@ -750,6 +750,45 @@
             100% { transform: scale(1); }
         }
 
+        /* Non-blocking, Xbox-achievement-style banner: informs, never gates input. */
+        .achievement-toast {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            z-index: 20;
+            width: min(460px, 86vw);
+            padding: 18px 22px;
+            border: 2px solid rgba(217, 184, 92, 0.85);
+            border-radius: 10px;
+            background: rgba(15, 10, 24, 0.94);
+            color: #fff8de;
+            text-align: center;
+            box-shadow: 0 0 36px rgba(0, 0, 0, 0.72);
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            animation: achievementToast 2600ms ease forwards;
+        }
+
+        .achievement-toast .toast-title {
+            margin: 0 0 6px;
+            font-size: 28px;
+            font-weight: 700;
+            color: #98ffbc;
+        }
+
+        .achievement-toast .toast-line {
+            color: #e5d7b7;
+            line-height: 1.5;
+            font-size: 15px;
+        }
+
+        @keyframes achievementToast {
+            0%   { opacity: 0; transform: translate(-50%, -42%) scale(0.86); }
+            14%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            78%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -58%) scale(0.97); }
+        }
+
         @media (max-width: 720px), (max-height: 660px) {
             #game-world {
                 --battle-height: 39dvh;
@@ -1043,10 +1082,7 @@
             let gameOver = false;
             let editMode = mode === "edit";
 
-            await loadHistory();
-            applyOpponentIdentity();
-            renderAll();
-            setMessage(editMode ? "Edit Mode" : "Drag through 3+ touching blocks of the same kind — any shape works.");
+            await startNewMatch();
 
             if (editMode) {
                 gridContainer.classList.add("locked");
@@ -1055,9 +1091,42 @@
                 bindInput();
             }
 
+            // Defeat is terminal, but restarting just re-seeds the scene in place — no page
+            // reload, so the already-loaded assets are reused instead of re-fetched.
             playAgainBtn.addEventListener("click", () => {
-                location.reload();
+                startNewMatch();
             });
+
+            // Soft reset: begin the next level in place. Reused both at startup and to continue
+            // after a win (auto) or a defeat ("Play Again"). Input is bound once, separately,
+            // and gating runs off the gameOver/resolving/locked flags — so this never re-binds.
+            async function startNewMatch() {
+                grid = createPlayableGrid();
+                player = { hp: settings.startingHP, maxHp: settings.startingHP };
+                ghost = { hp: settings.startingHP, maxHp: settings.startingHP };
+                activeGhostActions = DEFAULT_GHOST_ACTIONS.slice();
+                ghostActionIndex = 0;
+                currentRunActions = [];
+                startedWithoutOfficialGhost = true;
+                opponentLabel = "Opponent";
+                opponentIsOfficialGhost = false;
+                roundNumber = 1;
+                damageDealt = 0;
+                healingDone = 0;
+                selection = null;
+                selectionIsValid = false;
+                resolving = false;
+                gameOver = false;
+
+                effectLayer.innerHTML = "";
+                gridContainer.classList.remove("locked");
+                gameOverScreen.classList.remove("visible");
+
+                await loadHistory();
+                applyOpponentIdentity();
+                renderAll();
+                setMessage(editMode ? "Edit Mode" : "Drag through 3+ touching blocks of the same kind — any shape works.");
+            }
 
             function mergeSettings(base, override) {
                 const merged = {
@@ -1669,8 +1738,7 @@
                     playSound("defeat_sfx");
                 }
 
-                gameOverTitle.textContent = victory ? "Victory" : (defeatByGhost ? "Beaten by Your Ghost" : "Defeat");
-                gameOverTitle.className = victory ? "victory" : "defeat";
+                const title = victory ? "Victory" : (defeatByGhost ? "Beaten by Your Ghost" : "Defeat");
                 let outcomeLine;
                 if (victory) {
                     outcomeLine = startedWithoutOfficialGhost
@@ -1681,6 +1749,19 @@
                 } else {
                     outcomeLine = "The wild wraith won. No ghost forms — next run starts fresh.";
                 }
+
+                if (victory) {
+                    // The game is continuous: inform with a non-blocking banner, then roll
+                    // straight into the next level (now vs the run we just saved) — no click,
+                    // no page reload. The toast keeps fading over the freshly-seeded board.
+                    await showAchievementToast(title, outcomeLine);
+                    await startNewMatch();
+                    return;
+                }
+
+                // Defeat is terminal: keep the blocking end screen with its stats + Play Again.
+                gameOverTitle.textContent = title;
+                gameOverTitle.className = "defeat";
                 gameOverStats.innerHTML = [
                     `<div>Rounds: ${Math.max(1, roundNumber)}</div>`,
                     `<div>Damage Dealt: ${damageDealt}</div>`,
@@ -2026,6 +2107,28 @@
                 node.style.top = `${center.y - 30}px`;
                 effectLayer.appendChild(node);
                 setTimeout(() => node.remove(), 1020);
+            }
+
+            // Centered, non-blocking win banner. Lives on #game-world (not #effect-layer, which
+            // startNewMatch clears) so it can keep fading over the freshly-seeded next level.
+            // Resolves after a short beat — long enough to read — then the caller continues;
+            // the node fades out on its own animation and self-removes.
+            function showAchievementToast(title, line) {
+                const TOAST_MS = 2600;     // must match the .achievement-toast CSS animation
+                const CONTINUE_MS = 1100;  // when the next level is allowed to start underneath
+                const node = document.createElement("div");
+                node.className = "achievement-toast";
+                const titleEl = document.createElement("div");
+                titleEl.className = "toast-title";
+                titleEl.textContent = title;
+                const lineEl = document.createElement("div");
+                lineEl.className = "toast-line";
+                lineEl.textContent = line;
+                node.appendChild(titleEl);
+                node.appendChild(lineEl);
+                world.appendChild(node);
+                setTimeout(() => node.remove(), TOAST_MS);
+                return sleep(CONTINUE_MS);
             }
 
             async function soulExtraction() {

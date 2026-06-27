@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(awk '/<script>/{f=1;next} /<\\\\/script>/{f=0} f' code.html)",
+      "Bash(node --check /private/tmp/claude-501/-Users-isabellaherman-Documents-Astrocade-NecromancersClash/e03ba463-0510-440a-9888-0c27bd2bb407/scratchpad/extracted.js)"
+    ]
+  }
+}
