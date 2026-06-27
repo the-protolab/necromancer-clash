@@ -168,5 +168,13 @@ const assets = {
       1024,
       1024
     ]
+  },
+  "icon_battle": {
+    "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782575359125_01KW4WAS4NHQNEB134B1SN1NZ5.ItemIcon_Battle.png",
+    "type": "image",
+    "aspect_ratio": [
+      512,
+      512
+    ]
   }
 };

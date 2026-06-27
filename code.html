@@ -4,7 +4,18 @@
     <title>Necromancer's Clash</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Main font: Jaro, embedded as base64 in the <style> @font-face below (no external request). -->
     <style>
+        /* Jaro embedded as base64 (self-hosted, CDN-proof, keeps the single-file build).
+           latin subset (covers ASCII, em dash, multiplication sign). */
+        @font-face {
+            font-family: 'Jaro';
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+            src: url(data:font/woff2;base64,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) format('woff2');
+        }
+
         * {
             box-sizing: border-box;
         }
@@ -17,7 +28,7 @@
             overflow: hidden;
             background: #140d22;
             color: #f8f4ea;
-            font-family: Georgia, "Times New Roman", serif;
+            font-family: "Jaro", Georgia, "Times New Roman", serif;
             touch-action: none;
             user-select: none;
         }
@@ -75,7 +86,7 @@
         .game-title {
             margin: 0;
             color: #fff7d2;
-            font-size: 24px;
+            font-size: 30px;
             line-height: 1;
             text-shadow: 0 2px 12px rgba(0, 0, 0, 0.72);
         }
@@ -86,7 +97,7 @@
             max-width: 270px;
             padding: 4px 0;
             color: #f7e7b0;
-            font-size: 14px;
+            font-size: 18px;
             line-height: 1.2;
             text-align: right;
             text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
@@ -133,7 +144,7 @@
             justify-content: space-between;
             gap: 8px;
             color: #fff4cf;
-            font-size: 13px;
+            font-size: 16px;
             line-height: 1;
             text-shadow: 0 2px 8px rgba(0, 0, 0, 0.92);
         }
@@ -227,7 +238,7 @@
             border-radius: 8px;
             background: rgba(0, 0, 0, 0.58);
             color: #ffffff;
-            font-size: 11px;
+            font-size: 14px;
             font-weight: 700;
             text-transform: uppercase;
         }
@@ -243,19 +254,76 @@
         }
 
         .versus {
+            position: relative;
             align-self: center;
             justify-self: center;
-            width: 56px;
-            height: 56px;
+            width: 72px;
+            height: 72px;
             display: grid;
             place-items: center;
+            /* No circle frame — just the image (and the callouts anchored to this box). */
+        }
+
+        .versus img {
+            width: 80%;
+            height: 80%;
+            object-fit: contain;
+            filter: drop-shadow(0 0 8px rgba(217, 184, 92, 0.4));
+        }
+
+        /* Move callouts that pop above (player) / below (ghost) the VS bubble.
+           Absolutely positioned so the VS bubble itself never moves. */
+        .vs-callout {
+            position: absolute;
+            left: 50%;
+            transform: translate(-50%, 0) scale(0);
+            width: max-content;
+            max-width: 42vw;
+            padding: 5px 13px;
+            border-radius: 999px;
             border: 1px solid rgba(217, 184, 92, 0.5);
-            border-radius: 50%;
-            background: rgba(5, 4, 10, 0.6);
-            color: #ffe092;
-            font-size: 18px;
-            font-weight: 700;
-            text-shadow: 0 0 12px rgba(217, 184, 92, 0.8);
+            background: rgba(5, 4, 10, 0.82);
+            font-size: 19px;
+            font-weight: 800;
+            letter-spacing: 0.07em;
+            white-space: nowrap;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 6;
+        }
+
+        .vs-callout-top {
+            bottom: calc(100% + 10px); /* player's move, sits above the bubble */
+            color: #ffe7b0;
+        }
+
+        .vs-callout-bottom {
+            top: calc(100% + 10px); /* ghost's move, sits below the bubble */
+            color: #d6c4ff;
+            border-color: rgba(168, 130, 255, 0.55);
+        }
+
+        .vs-callout.show {
+            animation: jellyJumpIn 460ms cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+        }
+
+        .vs-callout.hide {
+            animation: jellyJumpOut 300ms cubic-bezier(0.6, -0.28, 0.74, 0.05) forwards;
+        }
+
+        @keyframes jellyJumpIn {
+            0%   { opacity: 0; transform: translate(-50%, 6px) scale(0.3, 0.3); }
+            40%  { opacity: 1; transform: translate(-50%, -3px) scale(1.18, 0.82); }
+            65%  { transform: translate(-50%, 0) scale(0.9, 1.12); }
+            82%  { transform: translate(-50%, 0) scale(1.05, 0.96); }
+            100% { opacity: 1; transform: translate(-50%, 0) scale(1, 1); }
+        }
+
+        @keyframes jellyJumpOut {
+            0%   { opacity: 1; transform: translate(-50%, 0) scale(1, 1); }
+            30%  { opacity: 1; transform: translate(-50%, 0) scale(1.14, 0.84); }
+            100% { opacity: 0; transform: translate(-50%, 4px) scale(0.2, 0.2); }
         }
 
         #effect-layer {
@@ -331,7 +399,7 @@
             border-radius: 0;
             background: transparent;
             color: #f5e9c8;
-            font-size: 13px;
+            font-size: 16px;
             text-align: center;
             text-shadow: 0 2px 8px rgba(0, 0, 0, 0.88);
         }
@@ -345,7 +413,7 @@
         .round-counter {
             min-width: 92px;
             color: #d8cda8;
-            font-size: 13px;
+            font-size: 16px;
             text-align: center;
         }
 
@@ -413,7 +481,7 @@
             position: relative;
             z-index: 1;
             color: #ffffff;
-            font-size: 16px;
+            font-size: 20px;
             font-weight: 700;
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
         }
@@ -467,6 +535,21 @@
             display: none; /* kill the white sheen on the black cells */
         }
 
+        .ghost-replay-banner {
+            position: absolute;
+            top: 10px;
+            left: 12px;
+            right: 12px;
+            z-index: 4;
+            text-align: center;
+            font-size: 19px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            color: rgba(214, 196, 255, 0.96);
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.85);
+            pointer-events: none;
+        }
+
         /* Selection trail: one reused SVG with two polylines (bright line + faux glow).
            pointer-events:none so it never interferes with tile hit-testing. */
         .trail-overlay {
@@ -513,7 +596,7 @@
             width: min(900px, 100%);
             margin: 7px auto 0;
             color: #d7caa3;
-            font-size: 13px;
+            font-size: 16px;
             line-height: 1.2;
             text-align: center;
         }
@@ -649,7 +732,7 @@
 
         #game-over-title {
             margin: 0 0 12px;
-            font-size: 34px;
+            font-size: 43px;
         }
 
         #game-over-title.victory {
@@ -664,7 +747,7 @@
             margin-bottom: 18px;
             color: #e5d7b7;
             line-height: 1.6;
-            font-size: 16px;
+            font-size: 20px;
         }
 
         .game-button {
@@ -830,7 +913,7 @@
             left: 0;
             top: 0;
             z-index: 6;
-            font-size: 27px;
+            font-size: 34px;
             font-weight: 700;
             text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
             pointer-events: none;
@@ -895,7 +978,7 @@
 
         .achievement-toast .toast-title {
             margin: 0 0 6px;
-            font-size: 28px;
+            font-size: 35px;
             font-weight: 700;
             color: #98ffbc;
         }
@@ -903,7 +986,7 @@
         .achievement-toast .toast-line {
             color: #e5d7b7;
             line-height: 1.5;
-            font-size: 15px;
+            font-size: 19px;
         }
 
         @keyframes achievementToast {
@@ -935,7 +1018,7 @@
                 max-width: none;
                 min-height: 26px;
                 padding: 5px 8px;
-                font-size: 12px;
+                font-size: 15px;
             }
 
             .combat-row {
@@ -947,7 +1030,7 @@
             .versus {
                 width: 40px;
                 height: 40px;
-                font-size: 14px;
+                font-size: 18px;
             }
 
             .hp-panel {
@@ -957,7 +1040,7 @@
             }
 
             .name-row {
-                font-size: 11px;
+                font-size: 14px;
             }
 
             .character-wrap {
@@ -979,7 +1062,7 @@
             .action-card {
                 min-height: 28px;
                 padding: 4px 5px;
-                font-size: 11px;
+                font-size: 14px;
             }
 
             .action-card img {
@@ -989,7 +1072,7 @@
 
             .round-counter,
             .hint-bar {
-                font-size: 11px;
+                font-size: 14px;
             }
 
             .round-counter {
@@ -1016,8 +1099,8 @@
     <div id="game-world">
         <section id="battlefield">
             <div class="battle-top">
-                <h1 class="game-title">Necromancer's Clash</h1>
-                <div id="round-status">Drag through 3+ touching blocks of the same kind — any shape works.</div>
+                <!-- Game title removed; #round-status kept (empty by default) for combat narration. -->
+                <div id="round-status"></div>
             </div>
 
             <div class="combat-row">
@@ -1035,7 +1118,11 @@
                     </div>
                 </div>
 
-                <div class="versus">VS</div>
+                <div class="versus">
+                    <div class="vs-callout vs-callout-top" id="vs-player-callout" aria-hidden="true"></div>
+                    <img id="vs-icon" alt="Battle">
+                    <div class="vs-callout vs-callout-bottom" id="vs-ghost-callout" aria-hidden="true"></div>
+                </div>
 
                 <div class="combatant ghost-side" id="ghost-combatant">
                     <div class="hp-panel">
@@ -1090,6 +1177,7 @@
             icon_health: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782567204890_01KW4MHY0TYE7RSS444J4V66J4.PictoIcon_Health 2.png",
             icon_card: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782567287239_01KW4MMEE7JBYRCGSCVTJWHWM2.PictoIcon_Card 2.png",
             icon_critical: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782567287378_01KW4MMEJJABK9QS5X0VNHXK89.PictoIcon_Critical 2.png",
+            icon_battle: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782575359125_01KW4WAS4NHQNEB134B1SN1NZ5.ItemIcon_Battle.png",
             block_sword: "https://d2oir5eh8rty2e.cloudfront.net/assets/images/block_sword_23711470-7f45-4bd0-b9f5-364ed7588779.webp",
             block_heart: "https://d2oir5eh8rty2e.cloudfront.net/assets/images/block_heart_4ae14b13-073e-4ab2-86f5-734c9238803b.webp",
             block_shield: "https://d2oir5eh8rty2e.cloudfront.net/assets/images/block_shield_61ad6e50-e1e8-4fce-8cc9-36bf8d916761.webp",
@@ -1143,6 +1231,13 @@
                 shield: { label: "Shield", short: "SHLD", sound: "shield_sfx" },
                 ice: { label: "Ice", short: "ICE", sound: "ice_freeze_sfx" }
             };
+            // Uppercase names shown in the VS callouts above/below the VS bubble. Tweak freely.
+            const COMBAT_CALLOUT = {
+                sword: "ATTACK",
+                heart: "HEALTH",
+                shield: "SHIELD",
+                ice: "ICE"
+            };
             const DEFAULT_SETTINGS = {
                 startingHP: 40,
                 damageMultiplier: 1,
@@ -1159,6 +1254,50 @@
                 { type: "ice", count: 3, direction: "default" }
             ];
 
+            // =====================================================================
+            // ROUND & GHOST-REPLAY TIMING (all values in milliseconds).
+            // Edit these freely to tune the pacing. Lower = snappier / faster,
+            // higher = more breathing room for the player to digest what happened.
+            // =====================================================================
+            const TIMING = {
+                // After you complete a combo, your matched tiles shrink + fade out over
+                // this long before the board refills.
+                tileRemoveMs: 220,
+
+                // Pause AFTER your board refills and BEFORE the ghost replay begins.
+                // This is the "let my new tiles settle" beat — raise it if the hand-off
+                // to the ghost still feels too abrupt.
+                boardSettleMs: 600,
+
+                ghost: {
+                    // The grid goes black and the "Last run, round x/y" banner shows for
+                    // this long BEFORE any of the ghost's tiles are revealed — gives the
+                    // player a moment to register that the ghost's move is coming.
+                    bannerLeadMs: 700,
+
+                    // Hold after the ghost's FIRST selected tile pops in (before the
+                    // trail starts connecting tiles).
+                    firstTileMs: 180,
+
+                    // Delay between each subsequent ghost tile as the trail draws itself.
+                    // Lower = the trail snakes out faster; higher = slower, more dramatic.
+                    perTileMs: 150,
+
+                    // Hold on the COMPLETED ghost selection (full trail visible) so the
+                    // player can fully absorb which tiles were picked, before combat fires.
+                    finalHoldMs: 1500
+                },
+
+                // The "ATTACK ×3" / "ICE ×4" callouts that pop above (player) and below
+                // (ghost) the VS bubble. They stay visible through the attack animations and
+                // only jelly out at the end of the round.
+                callout: {
+                    // When the ghost has NO replay to draw (the default wild wraith / legacy
+                    // saves), how long both callouts hold before the attacks fire.
+                    soloHoldMs: 700
+                }
+            };
+
             const world = document.getElementById("game-world");
             const battlefield = document.getElementById("battlefield");
             const effectLayer = document.getElementById("effect-layer");
@@ -1168,6 +1307,8 @@
             const hintBar = document.getElementById("hint-bar");
             const playerActionCard = document.getElementById("player-action-card");
             const ghostActionCard = document.getElementById("ghost-action-card");
+            const vsPlayerCallout = document.getElementById("vs-player-callout");
+            const vsGhostCallout = document.getElementById("vs-ghost-callout");
             const roundCounter = document.getElementById("round-counter");
             const playerHpText = document.getElementById("player-hp-text");
             const ghostHpText = document.getElementById("ghost-hp-text");
@@ -1195,6 +1336,16 @@
             const assetUrls = collectAssetUrls();
             await loadCoreImages(assetUrls);
             applyVisualAssets(assetUrls);
+            const vsIcon = document.getElementById("vs-icon");
+            if (vsIcon && assetUrls.icon_battle) {
+                vsIcon.src = assetUrls.icon_battle;
+            } else if (vsIcon) {
+                vsIcon.style.display = "none";
+                const label = document.createElement("span");
+                label.className = "versus-label";
+                label.textContent = "VS";
+                vsIcon.parentNode.appendChild(label);
+            }
             buildZonePattern(assetUrls);
             registerParameters();
 
@@ -1218,6 +1369,7 @@
             let trailLine = null;
             let trailGeo = null;
             let ghostReplayCells = []; // cells being revealed during a ghost selection replay
+            let ghostBanner = null; // "Last run, round x/y" overlay shown during the replay
             let lastHover = null; // last grid cell processed this drag — skips same-cell churn
             let resolving = false;
             let gameOver = false;
@@ -1260,13 +1412,14 @@
                 gameOver = false;
 
                 effectLayer.innerHTML = "";
+                clearVsCallouts();
                 gridContainer.classList.remove("locked");
                 gameOverScreen.classList.remove("visible");
 
                 await loadHistory();
                 applyOpponentIdentity();
                 renderAll();
-                setMessage(editMode ? "Edit Mode" : "Drag through 3+ touching blocks of the same kind — any shape works.");
+                setMessage(editMode ? "Edit Mode" : ""); // top starts clean; combat messages fill it during play
             }
 
             function mergeSettings(base, override) {
@@ -1306,6 +1459,7 @@
                     "icon_attack",
                     "icon_card",
                     "icon_health",
+                    "icon_battle",
                     "sword_attack_sfx",
                     "heal_sfx",
                     "shield_sfx",
@@ -1823,8 +1977,20 @@
                         gridContainer.appendChild(tile);
                     }
                 }
-                // renderGrid()-style wipe detaches the trail SVG; re-attach it on top.
+                // renderGrid()-style wipe detaches the trail SVG / banner; re-attach on top.
                 ensureTrailOverlay();
+                ensureGhostBanner();
+            }
+
+            // Banner overlaid on the black replay grid (e.g. "Last run, round 3/7").
+            // Re-attached after each grid wipe; renderGrid() removes it when play resumes.
+            function ensureGhostBanner() {
+                if (!ghostBanner) {
+                    ghostBanner = document.createElement("div");
+                    ghostBanner.className = "ghost-replay-banner";
+                }
+                if (ghostBanner.parentNode !== gridContainer) gridContainer.appendChild(ghostBanner);
+                return ghostBanner;
             }
 
             // Draws the ghost's trail directly (does NOT touch the live `selection`/`trailGeo`
@@ -1849,29 +2015,43 @@
                 trailLine.setAttribute("points", points);
             }
 
+            // Returns true if a trail was actually replayed (so the caller knows the ghost
+            // callout has already popped), false when skipped (default wraith / legacy saves).
             async function playGhostSelectionReplay(ghostAction) {
                 // Default wraith / legacy v2 ghosts carry no positions -> no replay beat.
-                if (!ghostAction || !Array.isArray(ghostAction.cells)) return;
+                if (!ghostAction || !Array.isArray(ghostAction.cells)) return false;
                 const cells = ghostAction.cells.filter((c) => inBounds(c.row, c.col));
-                if (cells.length < 2) return;
+                if (cells.length < 2) return false;
 
                 ghostReplayCells = cells;
                 const geo = computeTrailGeometry(); // box stays stable across innerHTML swaps
+
+                // Which move of your last run this is: ghostActionIndex was already advanced.
+                const total = activeGhostActions.length || 1;
+                const roundNum = ((ghostActionIndex - 1) % total + total) % total + 1;
+                ensureGhostBanner().textContent = `Last run, round ${roundNum}/${total}`;
+
                 playSound("block_select_sfx");
+                renderGhostReplayGrid(ghostAction.type, 0); // black board + banner, nothing revealed
+                await sleep(TIMING.ghost.bannerLeadMs);      // let the banner register first
+
                 renderGhostReplayGrid(ghostAction.type, 1);
-                await sleep(140);
+                await sleep(TIMING.ghost.firstTileMs);
                 for (let i = 2; i <= cells.length; i++) {
                     renderGhostReplayGrid(ghostAction.type, i);
                     drawGhostTrail(cells, i, geo);
-                    await sleep(110);
+                    await sleep(TIMING.ghost.perTileMs);
                 }
-                await sleep(320); // hold the completed trail
+                // Ghost just "finished tracing" -> pop its move callout below the VS bubble.
+                showVsCallout(vsGhostCallout, ghostAction);
+                await sleep(TIMING.ghost.finalHoldMs); // hold so the player can digest the full selection
 
                 trailSvg.classList.remove("ghost");
                 hideTrail();
                 gridContainer.classList.remove("ghost-replay");
                 ghostReplayCells = [];
-                renderGrid(); // clean rebuild from the untouched grid[][]
+                renderGrid(); // clean rebuild from the untouched grid[][] (also removes the banner)
+                return true;
             }
 
             function flashInvalidSelection() {
@@ -1879,7 +2059,7 @@
                     selection.invalid = true;
                     updateSelectionMarks();
                 }
-                setMessage("No match — drag through 3+ touching blocks of the same kind.");
+                setMessage("No match — blocks must touch and be the same kind.");
                 setTimeout(clearSelection, 260);
             }
 
@@ -1912,24 +2092,35 @@
                 ghostActionIndex += 1;
 
                 renderActionCards(playerAction, ghostAction);
+                // You just finished tracing -> pop your move callout above the VS bubble.
+                showVsCallout(vsPlayerCallout, playerAction);
                 markRemoving(cells);
-                await sleep(220);
+                await sleep(TIMING.tileRemoveMs);
                 removeAndRefill(cells);
                 renderGrid();
-                await sleep(120);
+                await sleep(TIMING.boardSettleMs); // let the refilled board settle before handing off to the ghost
 
-                // Show what the ghost picked before the scene effects fire (no-op when the
-                // ghost has no recorded positions, e.g. the default wraith / legacy saves).
-                await playGhostSelectionReplay(ghostAction);
+                // Show what the ghost picked before the scene effects fire. The replay pops the
+                // ghost callout itself when its trail finishes; if there's no replay (default
+                // wraith / legacy saves) we pop it here so both callouts still read before combat.
+                const ghostReplayed = await playGhostSelectionReplay(ghostAction);
+                if (!ghostReplayed) {
+                    showVsCallout(vsGhostCallout, ghostAction);
+                    await sleep(TIMING.callout.soloHoldMs);
+                }
 
+                // Both move callouts stay flanking VS through the whole attack sequence...
                 await resolveCombat(playerAction, ghostAction);
+                // ...then jelly out as the round ends.
+                hideVsCallout(vsPlayerCallout);
+                hideVsCallout(vsGhostCallout);
                 roundNumber += 1;
                 renderHud();
 
                 if (await maybeEndGame()) return;
 
                 renderActionCards(null, activeGhostActions[ghostActionIndex % activeGhostActions.length]);
-                setMessage("Drag through 3+ touching blocks of the same kind — any shape works.");
+                setMessage(""); // clear the top between rounds (no instruction text)
                 gridContainer.classList.remove("locked");
                 resolving = false;
             }
@@ -2342,6 +2533,25 @@
                     card.classList.add("reveal");
                     setTimeout(() => card.classList.remove("reveal"), 480);
                 });
+            }
+
+            // VS callouts: pop a side's move ("ICE ×4") in/out with a jelly-jump animation.
+            function showVsCallout(el, action) {
+                el.textContent = `${COMBAT_CALLOUT[action.type] || action.type.toUpperCase()} ×${action.count}`;
+                el.classList.remove("hide");
+                void el.offsetWidth; // restart the entrance animation
+                el.classList.add("show");
+            }
+
+            function hideVsCallout(el) {
+                if (!el.classList.contains("show")) return;
+                el.classList.remove("show");
+                void el.offsetWidth;
+                el.classList.add("hide");
+            }
+
+            function clearVsCallouts() {
+                [vsPlayerCallout, vsGhostCallout].forEach((el) => el.classList.remove("show", "hide"));
             }
 
             function labelFor(side) {
