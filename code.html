@@ -451,6 +451,22 @@
             transform: scale(0.68);
         }
 
+        /* Ghost selection replay: black out the live board, paint only the ghost's saved cells. */
+        #grid-container.ghost-replay {
+            opacity: 1; /* override #grid-container.locked { opacity: .72 } during the replay */
+            background: #000;
+        }
+
+        .tile.ghost-black {
+            background: #000;
+            border-color: rgba(255, 255, 255, 0.06);
+            cursor: default;
+        }
+
+        .tile.ghost-black::before {
+            display: none; /* kill the white sheen on the black cells */
+        }
+
         /* Selection trail: one reused SVG with two polylines (bright line + faux glow).
            pointer-events:none so it never interferes with tile hit-testing. */
         .trail-overlay {
@@ -482,6 +498,15 @@
 
         .trail-overlay.invalid .trail-line {
             stroke: rgba(255, 142, 148, 0.95);
+        }
+
+        /* Ghost-tinted trail (reuses .trail-overlay geometry/structure). */
+        .trail-overlay.ghost .trail-glow {
+            stroke: rgba(168, 130, 255, 0.30);
+        }
+
+        .trail-overlay.ghost .trail-line {
+            stroke: rgba(208, 188, 255, 0.95);
         }
 
         .hint-bar {
@@ -1192,6 +1217,7 @@
             let trailGlow = null;
             let trailLine = null;
             let trailGeo = null;
+            let ghostReplayCells = []; // cells being revealed during a ghost selection replay
             let lastHover = null; // last grid cell processed this drag — skips same-cell churn
             let resolving = false;
             let gameOver = false;
@@ -1508,11 +1534,20 @@
                     return BLOCK_TYPES.includes(action) ? { type: action, count: 3, direction: "default" } : null;
                 }
                 if (!action || !BLOCK_TYPES.includes(action.type)) return null;
-                return {
+                const normalized = {
                     type: action.type,
                     count: clamp(Number(action.count) || 3, 3, gridSize),
                     direction: typeof action.direction === "string" ? action.direction : "default"
                 };
+                // Sanitize replay positions: drop out-of-bounds (e.g. recorded on a larger grid)
+                // and non-finite cells. Omit cells entirely if fewer than 2 survive (legacy v2 path).
+                if (Array.isArray(action.cells)) {
+                    const cells = action.cells
+                        .map((c) => ({ row: Number(c && c.row), col: Number(c && c.col) }))
+                        .filter((c) => Number.isFinite(c.row) && Number.isFinite(c.col) && inBounds(c.row, c.col));
+                    if (cells.length >= 2) normalized.cells = cells;
+                }
+                return normalized;
             }
 
             function bindInput() {
@@ -1664,7 +1699,9 @@
                 return {
                     type,
                     count: cells.length,
-                    direction: directionFromCells(cells)
+                    direction: directionFromCells(cells),
+                    // Persisted so the ghost can replay this exact selection path visually.
+                    cells: cells.map((c) => ({ row: c.row, col: c.col }))
                 };
             }
 
@@ -1748,6 +1785,95 @@
                 if (trailSvg) trailSvg.style.display = "none";
             }
 
+            // --- Ghost selection replay -------------------------------------------------
+            // Rebuilds the live board as a throwaway black grid that reveals only the
+            // ghost's recorded selection (with its real block type), then animates the
+            // saved trail through it. The `grid` model is never mutated, so a single
+            // renderGrid() fully restores the real board afterwards.
+            function renderGhostReplayGrid(ghostType, revealedCount) {
+                gridContainer.classList.add("ghost-replay");
+                gridContainer.innerHTML = "";
+                const revealKeys = new Set(
+                    ghostReplayCells.slice(0, revealedCount).map((c) => `${c.row},${c.col}`)
+                );
+                const imageUrl = assetUrls[`block_${ghostType}`];
+                for (let row = 0; row < gridSize; row++) {
+                    for (let col = 0; col < gridSize; col++) {
+                        const tile = document.createElement("button");
+                        tile.type = "button";
+                        tile.dataset.row = String(row);
+                        tile.dataset.col = String(col);
+                        if (revealKeys.has(`${row},${col}`)) {
+                            tile.className = `tile ${ghostType} ghost-reveal`;
+                            if (imageUrl) {
+                                const img = document.createElement("img");
+                                img.alt = BLOCK_META[ghostType].label;
+                                img.src = imageUrl;
+                                img.onerror = () => {
+                                    img.remove();
+                                    tile.appendChild(fallbackLabel(ghostType));
+                                };
+                                tile.appendChild(img);
+                            } else {
+                                tile.appendChild(fallbackLabel(ghostType));
+                            }
+                        } else {
+                            tile.className = "tile ghost-black";
+                        }
+                        gridContainer.appendChild(tile);
+                    }
+                }
+                // renderGrid()-style wipe detaches the trail SVG; re-attach it on top.
+                ensureTrailOverlay();
+            }
+
+            // Draws the ghost's trail directly (does NOT touch the live `selection`/`trailGeo`
+            // that renderTrail() reads, so the player's next drag stays pristine). Mirrors the
+            // pixel math in renderTrail().
+            function drawGhostTrail(cells, count, geo) {
+                const { padX, padY, gap, cell } = geo;
+                const step = cell + gap;
+                const points = cells.slice(0, count).map((c) => {
+                    const x = padX + c.col * step + cell / 2;
+                    const y = padY + c.row * step + cell / 2;
+                    return `${x.toFixed(1)},${y.toFixed(1)}`;
+                }).join(" ");
+                const width = Math.max(3, cell * 0.16);
+                ensureTrailOverlay();
+                trailSvg.style.display = "block";
+                trailSvg.classList.remove("invalid");
+                trailSvg.classList.add("ghost");
+                trailGlow.setAttribute("stroke-width", (width * 2.4).toFixed(1));
+                trailGlow.setAttribute("points", points);
+                trailLine.setAttribute("stroke-width", width.toFixed(1));
+                trailLine.setAttribute("points", points);
+            }
+
+            async function playGhostSelectionReplay(ghostAction) {
+                // Default wraith / legacy v2 ghosts carry no positions -> no replay beat.
+                if (!ghostAction || !Array.isArray(ghostAction.cells)) return;
+                const cells = ghostAction.cells.filter((c) => inBounds(c.row, c.col));
+                if (cells.length < 2) return;
+
+                ghostReplayCells = cells;
+                const geo = computeTrailGeometry(); // box stays stable across innerHTML swaps
+                playSound("block_select_sfx");
+                renderGhostReplayGrid(ghostAction.type, 1);
+                await sleep(140);
+                for (let i = 2; i <= cells.length; i++) {
+                    renderGhostReplayGrid(ghostAction.type, i);
+                    drawGhostTrail(cells, i, geo);
+                    await sleep(110);
+                }
+                await sleep(320); // hold the completed trail
+
+                trailSvg.classList.remove("ghost");
+                hideTrail();
+                gridContainer.classList.remove("ghost-replay");
+                ghostReplayCells = [];
+                renderGrid(); // clean rebuild from the untouched grid[][]
+            }
+
             function flashInvalidSelection() {
                 if (selection) {
                     selection.invalid = true;
@@ -1791,6 +1917,10 @@
                 removeAndRefill(cells);
                 renderGrid();
                 await sleep(120);
+
+                // Show what the ghost picked before the scene effects fire (no-op when the
+                // ghost has no recorded positions, e.g. the default wraith / legacy saves).
+                await playGhostSelectionReplay(ghostAction);
 
                 await resolveCombat(playerAction, ghostAction);
                 roundNumber += 1;
@@ -2026,7 +2156,7 @@
             async function saveOfficialGhost() {
                 // Commit the completed run as the ghost the player will face next time.
                 await saveState({
-                    version: 2,
+                    version: 3,
                     ghostActions: currentRunActions.map(cloneAction),
                     hasOfficialGhost: currentRunActions.length > 0
                 });
@@ -2035,7 +2165,7 @@
             async function clearSavedGhost() {
                 // On defeat the history resets: next run starts fresh vs the wild wraith.
                 await saveState({
-                    version: 2,
+                    version: 3,
                     ghostActions: [],
                     hasOfficialGhost: false
                 });
@@ -2459,7 +2589,11 @@
                 return {
                     type: action.type,
                     count: action.count,
-                    direction: action.direction || "default"
+                    direction: action.direction || "default",
+                    // Keep cells absent (not []) when missing so "no positions -> skip replay" stays clean.
+                    cells: Array.isArray(action.cells)
+                        ? action.cells.map((c) => ({ row: c.row, col: c.col }))
+                        : undefined
                 };
             }
 
