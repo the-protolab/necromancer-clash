@@ -140,20 +140,50 @@
 
         .hp-track {
             width: 100%;
-            height: 12px;
+            height: 20px;
             margin-top: 5px;
+            box-sizing: border-box;
             overflow: hidden;
-            border: 1px solid rgba(217, 184, 92, 0.62);
-            border-radius: 7px;
-            background: rgba(0, 0, 0, 0.5);
+            border: 4px solid #1a1a1a;
+            border-radius: 10px;
+            background: #2b2b2b;
         }
 
         .hp-fill {
+            position: relative;
             width: 100%;
             height: 100%;
-            border-radius: 7px;
-            background: linear-gradient(90deg, #c92231, #ff6b5f);
+            border-radius: 10px 0 0 10px;
+            overflow: hidden;
+            background: #3ec46d;
+            box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.35),
+                        inset 0 -4px 0 rgba(0, 0, 0, 0.25);
             transition: width 260ms ease;
+        }
+
+        /* Animated diagonal stripes over the HP fill (barber-pole "flow").
+           Composited version: the stripe layer is one tile (40px) wider and slides via
+           transform: translateX — runs on the GPU compositor, NO per-frame repaint.
+           Parent's overflow:hidden clips the overhang; the 40px shift loops seamlessly
+           because the stripe pattern repeats every 40px. */
+        .hp-fill::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: -40px;
+            width: calc(100% + 40px);
+            pointer-events: none;
+            background-image: repeating-linear-gradient(45deg,
+                rgba(255, 255, 255, 0.18) 0 14px, transparent 14px 28px);
+            background-size: 40px 40px;
+            animation: flow 1s linear infinite;
+            will-change: transform;
+        }
+
+        @keyframes flow {
+            from { transform: translateX(0); }
+            to { transform: translateX(40px); }
         }
 
         .character-wrap {
@@ -237,13 +267,48 @@
         }
 
         #grid-zone {
+            /* Patterned background ported from HOC/DungeonBend (.app-screen): diagonal
+               gradient + a drifting pictogram tile. Spacing/colors/motion replicated 1:1
+               from src/Dungeon/View/css/_.bend and scripts/generate-deck-pattern.py. The
+               tile itself is baked client-side into --zone-pattern-image (buildZonePattern). */
+            --pattern-tile-w: 609px;
+            --pattern-opacity: 0.05;
+            --pattern-anim-duration: 45s;
+            --app-bg-gradient-from: #2E404F;
+            --app-bg-gradient-to: #1E242F;
+            position: relative;
+            isolation: isolate;
             display: grid;
             grid-template-rows: auto minmax(0, 1fr) auto;
             min-height: 0;
             padding: 8px 12px 12px;
-            background:
-                linear-gradient(180deg, rgba(8, 5, 16, 0.94), rgba(12, 8, 22, 0.98)),
-                #0d0815;
+            background: linear-gradient(135deg, var(--app-bg-gradient-from) 0%, var(--app-bg-gradient-to) 100%);
+        }
+
+        #grid-zone::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background-image: var(--zone-pattern-image, none);
+            background-repeat: repeat;
+            background-size: var(--pattern-tile-w) auto;
+            opacity: var(--pattern-opacity);
+            animation: zone-pattern-drift var(--pattern-anim-duration) linear infinite;
+        }
+
+        /* Keep the real content above the pattern layer (::before is positioned). */
+        #grid-zone > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* tile is 1624x762 -> vertical period / horizontal period = 762/1624 = 0.469211,
+           so one full horizontal tile of drift advances exactly one vertical period: seamless. */
+        @keyframes zone-pattern-drift {
+            from { background-position: 0 0; }
+            to { background-position: var(--pattern-tile-w) calc(var(--pattern-tile-w) * 0.469211); }
         }
 
         .action-strip {
@@ -989,9 +1054,17 @@
     <script>
         const LOCAL_ASSET_URLS = {
             necromancer_player: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782555395927_01KW499HTQFYK8MBGBCQCXAGJ2.necromancer_player.png",
-            necromancer_ghost: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782557636905_01KW4BDY995A5TQ29TD550RCST.necromancer_ghost.png",
+            necromancer_ghost: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782567693831_01KW4N0VG7SPDZ3FMR8QGGY103.necromancer_ghost.png",
             necromancer_stone: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782557742206_01KW4BH53YJMTY6P7ZMFE6YJ8W.necromancer_stone.png",
             battlefield_background: "https://d2oir5eh8rty2e.cloudfront.net/assets/images/battlefield_background_604ae7d3-bf7d-47e6-a644-cebbe40d0235.webp",
+            icon_trophy: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782567020280_01KW4MC9QR3JYJJ78KKZCNHT30.PictoIcon_Trophy 2.png",
+            icon_attack: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782567020394_01KW4MC9VABRFM30HKN8TTDP14.PictoIcon_Attack 2.png",
+            icon_boss: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782567020511_01KW4MC9YZEZ1HAJ79BH0W55G3.PictoIcon_Boss 2.png",
+            icon_skull: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782567204639_01KW4MHXRZJ4VPNPM5ZBD1VPMZ.PictoIcon_Skull 2.png",
+            icon_shield: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782567204777_01KW4MHXX94D6RSWX9JDPGWNYY.PictoIcon_Shield 2.png",
+            icon_health: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782567204890_01KW4MHY0TYE7RSS444J4V66J4.PictoIcon_Health 2.png",
+            icon_card: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782567287239_01KW4MMEE7JBYRCGSCVTJWHWM2.PictoIcon_Card 2.png",
+            icon_critical: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782567287378_01KW4MMEJJABK9QS5X0VNHXK89.PictoIcon_Critical 2.png",
             block_sword: "https://d2oir5eh8rty2e.cloudfront.net/assets/images/block_sword_23711470-7f45-4bd0-b9f5-364ed7588779.webp",
             block_heart: "https://d2oir5eh8rty2e.cloudfront.net/assets/images/block_heart_4ae14b13-073e-4ab2-86f5-734c9238803b.webp",
             block_shield: "https://d2oir5eh8rty2e.cloudfront.net/assets/images/block_shield_61ad6e50-e1e8-4fce-8cc9-36bf8d916761.webp",
@@ -1064,6 +1137,7 @@
             const world = document.getElementById("game-world");
             const battlefield = document.getElementById("battlefield");
             const effectLayer = document.getElementById("effect-layer");
+            const gridZone = document.getElementById("grid-zone");
             const gridContainer = document.getElementById("grid-container");
             const roundStatus = document.getElementById("round-status");
             const hintBar = document.getElementById("hint-bar");
@@ -1096,6 +1170,7 @@
             const assetUrls = collectAssetUrls();
             await loadCoreImages(assetUrls);
             applyVisualAssets(assetUrls);
+            buildZonePattern(assetUrls);
             registerParameters();
 
             let grid = createPlayableGrid();
@@ -1197,6 +1272,14 @@
                     "block_heart",
                     "block_shield",
                     "block_ice",
+                    "icon_critical",
+                    "icon_skull",
+                    "icon_shield",
+                    "icon_trophy",
+                    "icon_boss",
+                    "icon_attack",
+                    "icon_card",
+                    "icon_health",
                     "sword_attack_sfx",
                     "heal_sfx",
                     "shield_sfx",
@@ -1257,6 +1340,70 @@
                 }
                 setCharacterImage(playerImg, urls.necromancer_player);
                 setCharacterImage(ghostImg, urls.necromancer_stone);
+            }
+
+            // Bakes the DungeonBend pictogram tile client-side. That project ships a
+            // committed PNG (assets/ui/deck-editor/deck-pattern-tile.png) built by
+            // scripts/generate-deck-pattern.py; this single-file build composites the 8
+            // icons into the same seamless tile at runtime and feeds it to
+            // #grid-zone::before via --zone-pattern-image. KNOBS mirror that script 1:1,
+            // so the spacing/offset is identical. Non-blocking: if anything fails the
+            // plain gradient just stays.
+            function buildZonePattern(urls) {
+                const FRAME = 256;           // native icon size (all icons are 256x256)
+                const H_GAP = 150;           // horizontal gap -> center-to-center 406
+                const V_GAP = 125;           // vertical gap -> row center-to-center 381
+                const ROW1_OFFSET = 163;     // row 1 shifted right -> diagonal/brick feel
+                const CELL_W = FRAME + H_GAP;     // 406
+                const CELL_H = FRAME + V_GAP;     // 381
+                // Row 1 (top, offset) then row 2 (flush below), per the requested layout.
+                const ROW1 = ["icon_critical", "icon_skull", "icon_shield", "icon_trophy"];
+                const ROW2 = ["icon_boss", "icon_attack", "icon_card", "icon_health"];
+                const TILE_W = ROW1.length * CELL_W;   // 1624 (seamless horizontally)
+                const TILE_H = 2 * CELL_H;             // 762  (seamless vertically)
+
+                const loadIcon = (id) => new Promise((resolve) => {
+                    const url = urls[id];
+                    if (!url) { resolve(null); return; }
+                    const img = new Image();
+                    img.crossOrigin = "anonymous";   // CDN sends Access-Control-Allow-Origin:* -> canvas stays untainted
+                    const timer = setTimeout(() => resolve(null), 4000);
+                    img.onload = () => { clearTimeout(timer); resolve(img); };
+                    img.onerror = () => { clearTimeout(timer); resolve(null); };
+                    img.src = url;
+                });
+
+                const ids = ROW1.concat(ROW2);
+                Promise.all(ids.map(loadIcon)).then((imgs) => {
+                    if (imgs.some((img) => !img)) return;   // missing icon -> keep clean gradient
+                    const byId = {};
+                    ids.forEach((id, i) => { byId[id] = imgs[i]; });
+
+                    const canvas = document.createElement("canvas");
+                    canvas.width = TILE_W;
+                    canvas.height = TILE_H;
+                    const ctx = canvas.getContext("2d");
+                    if (!ctx) return;
+
+                    // Paste each icon with horizontal+vertical wrap so an icon crossing an
+                    // edge reappears on the opposite side -> the tile repeats seamlessly.
+                    const place = (img, x, y) => {
+                        for (const dx of [-TILE_W, 0, TILE_W]) {
+                            for (const dy of [-TILE_H, 0, TILE_H]) {
+                                ctx.drawImage(img, x + dx, y + dy, FRAME, FRAME);
+                            }
+                        }
+                    };
+                    ROW1.forEach((id, i) => place(byId[id], ROW1_OFFSET + i * CELL_W, 0));
+                    ROW2.forEach((id, i) => place(byId[id], i * CELL_W, CELL_H));
+
+                    try {
+                        const dataUrl = canvas.toDataURL("image/png");
+                        gridZone.style.setProperty("--zone-pattern-image", `url("${dataUrl}")`);
+                    } catch (error) {
+                        // Tainted canvas (unexpected CORS failure) -> leave gradient unpatterned.
+                    }
+                });
             }
 
             function applyOpponentIdentity() {

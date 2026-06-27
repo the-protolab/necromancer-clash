@@ -2,7 +2,16 @@
   "permissions": {
     "allow": [
       "Bash(awk '/<script>/{f=1;next} /<\\\\/script>/{f=0} f' code.html)",
-      "Bash(node --check /private/tmp/claude-501/-Users-isabellaherman-Documents-Astrocade-NecromancersClash/e03ba463-0510-440a-9888-0c27bd2bb407/scratchpad/extracted.js)"
+      "Bash(node --check /private/tmp/claude-501/-Users-isabellaherman-Documents-Astrocade-NecromancersClash/e03ba463-0510-440a-9888-0c27bd2bb407/scratchpad/extracted.js)",
+      "Read(//Users/isabellaherman/Documents/HOC/**)",
+      "Bash(curl -s -I -H \"Origin: https://example.com\" \"https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782567020280_01KW4MC9QR3JYJJ78KKZCNHT30.PictoIcon_Trophy%202.png\")",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code} | type %{content_type}\\\\n\" -H \"Origin: https://astrocade.com\" \"https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782567020280_01KW4MC9QR3JYJJ78KKZCNHT30.PictoIcon_Trophy%202.png\")",
+      "Bash(curl -s -I -H \"Origin: https://astrocade.com\" \"https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782567020280_01KW4MC9QR3JYJJ78KKZCNHT30.PictoIcon_Trophy%202.png\")",
+      "Bash(node *)",
+      "Bash(timeout 20 npx --yes playwright@latest --version)",
+      "Bash('/Applications/Brave Browser.app/Contents/MacOS/Brave Browser' --headless=new --disable-gpu --hide-scrollbars --window-size=520,560 --virtual-time-budget=8000 --screenshot=/private/tmp/claude-501/-Users-isabellaherman-Documents-Astrocade-NecromancersClash/eca78c92-b74a-4fd7-87db-5da8fb85d19f/scratchpad/pattern-shot.png file:///private/tmp/claude-501/-Users-isabellaherman-Documents-Astrocade-NecromancersClash/eca78c92-b74a-4fd7-87db-5da8fb85d19f/scratchpad/pattern-test.html)",
+      "Bash(curl -s -o /dev/null -w \"server HTTP %{http_code}\\\\n\" \"http://127.0.0.1:8000/code.html\")",
+      "Bash(open \"http://127.0.0.1:8000/code.html\")"
     ]
   }
 }

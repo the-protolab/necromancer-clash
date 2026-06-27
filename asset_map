@@ -5,14 +5,6 @@
 // Example: lib.getAsset["player_sprite"]
 
 const assets = {
-  "necromancer_ghost": {
-    "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782557636905_01KW4BDY995A5TQ29TD550RCST.necromancer_ghost.png",
-    "type": "image",
-    "aspect_ratio": [
-      1024,
-      1024
-    ]
-  },
   "battlefield_background": {
     "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/images/battlefield_background_604ae7d3-bf7d-47e6-a644-cebbe40d0235.webp",
     "type": "image",
@@ -99,6 +91,78 @@ const assets = {
   },
   "necromancer_stone": {
     "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782557742206_01KW4BH53YJMTY6P7ZMFE6YJ8W.necromancer_stone.png",
+    "type": "image",
+    "aspect_ratio": [
+      1024,
+      1024
+    ]
+  },
+  "icon_trophy": {
+    "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782567020280_01KW4MC9QR3JYJJ78KKZCNHT30.PictoIcon_Trophy 2.png",
+    "type": "image",
+    "aspect_ratio": [
+      256,
+      256
+    ]
+  },
+  "icon_attack": {
+    "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782567020394_01KW4MC9VABRFM30HKN8TTDP14.PictoIcon_Attack 2.png",
+    "type": "image",
+    "aspect_ratio": [
+      256,
+      256
+    ]
+  },
+  "icon_boss": {
+    "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782567020511_01KW4MC9YZEZ1HAJ79BH0W55G3.PictoIcon_Boss 2.png",
+    "type": "image",
+    "aspect_ratio": [
+      256,
+      256
+    ]
+  },
+  "icon_skull": {
+    "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782567204639_01KW4MHXRZJ4VPNPM5ZBD1VPMZ.PictoIcon_Skull 2.png",
+    "type": "image",
+    "aspect_ratio": [
+      256,
+      256
+    ]
+  },
+  "icon_shield": {
+    "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782567204777_01KW4MHXX94D6RSWX9JDPGWNYY.PictoIcon_Shield 2.png",
+    "type": "image",
+    "aspect_ratio": [
+      256,
+      256
+    ]
+  },
+  "icon_health": {
+    "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782567204890_01KW4MHY0TYE7RSS444J4V66J4.PictoIcon_Health 2.png",
+    "type": "image",
+    "aspect_ratio": [
+      256,
+      256
+    ]
+  },
+  "icon_card": {
+    "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782567287239_01KW4MMEE7JBYRCGSCVTJWHWM2.PictoIcon_Card 2.png",
+    "type": "image",
+    "aspect_ratio": [
+      256,
+      256
+    ]
+  },
+  "icon_critical": {
+    "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782567287378_01KW4MMEJJABK9QS5X0VNHXK89.PictoIcon_Critical 2.png",
+    "type": "image",
+    "aspect_ratio": [
+      256,
+      256
+    ]
+  },
+  "necromancer_ghost": {
+    "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782567693831_01KW4N0VG7SPDZ3FMR8QGGY103.necromancer_ghost.png",
     "type": "image",
     "aspect_ratio": [
       1024,
