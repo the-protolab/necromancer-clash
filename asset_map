@@ -6,11 +6,11 @@
 
 const assets = {
   "necromancer_ghost": {
-    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/images/necromancer_ghost_0abe6c7b-7b26-4d63-89ea-1c8b0a107fd1.webp",
+    "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782557636905_01KW4BDY995A5TQ29TD550RCST.necromancer_ghost.png",
     "type": "image",
     "aspect_ratio": [
-      764,
-      1245
+      1024,
+      1024
     ]
   },
   "battlefield_background": {
@@ -91,6 +91,14 @@ const assets = {
   },
   "necromancer_player": {
     "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782555395927_01KW499HTQFYK8MBGBCQCXAGJ2.necromancer_player.png",
+    "type": "image",
+    "aspect_ratio": [
+      1024,
+      1024
+    ]
+  },
+  "necromancer_stone": {
+    "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782557742206_01KW4BH53YJMTY6P7ZMFE6YJ8W.necromancer_stone.png",
     "type": "image",
     "aspect_ratio": [
       1024,

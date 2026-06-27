@@ -179,19 +179,6 @@
             filter: drop-shadow(0 0 18px rgba(105, 228, 255, 0.5)) drop-shadow(0 12px 18px rgba(0, 0, 0, 0.68));
         }
 
-        .fallback-character {
-            display: grid;
-            place-items: center;
-            width: 92px;
-            height: 132px;
-            border: 0;
-            border-radius: 50% 50% 12px 12px;
-            background: linear-gradient(180deg, #3f2d55, #15101f);
-            color: #fff4cf;
-            font-size: 42px;
-            font-weight: 700;
-        }
-
         .status-row {
             position: absolute;
             top: 4px;
@@ -882,7 +869,6 @@
                     <div class="character-wrap">
                         <div class="status-row" id="player-status"></div>
                         <img class="character-img" id="player-img" alt="Player">
-                        <div class="fallback-character" id="player-fallback" hidden>P</div>
                     </div>
                 </div>
 
@@ -899,7 +885,6 @@
                     <div class="character-wrap">
                         <div class="status-row" id="ghost-status"></div>
                         <img class="character-img" id="ghost-img" alt="Opponent">
-                        <div class="fallback-character" id="ghost-fallback" hidden>N</div>
                     </div>
                 </div>
             </div>
@@ -931,7 +916,8 @@
     <script>
         const LOCAL_ASSET_URLS = {
             necromancer_player: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782555395927_01KW499HTQFYK8MBGBCQCXAGJ2.necromancer_player.png",
-            necromancer_ghost: "https://d2oir5eh8rty2e.cloudfront.net/assets/images/necromancer_ghost_0abe6c7b-7b26-4d63-89ea-1c8b0a107fd1.webp",
+            necromancer_ghost: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782557636905_01KW4BDY995A5TQ29TD550RCST.necromancer_ghost.png",
+            necromancer_stone: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782557742206_01KW4BH53YJMTY6P7ZMFE6YJ8W.necromancer_stone.png",
             battlefield_background: "https://d2oir5eh8rty2e.cloudfront.net/assets/images/battlefield_background_604ae7d3-bf7d-47e6-a644-cebbe40d0235.webp",
             block_sword: "https://d2oir5eh8rty2e.cloudfront.net/assets/images/block_sword_23711470-7f45-4bd0-b9f5-364ed7588779.webp",
             block_heart: "https://d2oir5eh8rty2e.cloudfront.net/assets/images/block_heart_4ae14b13-073e-4ab2-86f5-734c9238803b.webp",
@@ -1019,8 +1005,6 @@
             const ghostStatus = document.getElementById("ghost-status");
             const playerImg = document.getElementById("player-img");
             const ghostImg = document.getElementById("ghost-img");
-            const playerFallback = document.getElementById("player-fallback");
-            const ghostFallback = document.getElementById("ghost-fallback");
             const opponentName = document.getElementById("opponent-name");
             const playerCombatant = document.getElementById("player-combatant");
             const ghostCombatant = document.getElementById("ghost-combatant");
@@ -1098,6 +1082,7 @@
                 const ids = [
                     "necromancer_player",
                     "necromancer_ghost",
+                    "necromancer_stone",
                     "battlefield_background",
                     "block_sword",
                     "block_heart",
@@ -1128,6 +1113,7 @@
                 const imageIds = [
                     "necromancer_player",
                     "necromancer_ghost",
+                    "necromancer_stone",
                     "battlefield_background",
                     "block_sword",
                     "block_heart",
@@ -1160,32 +1146,30 @@
                 if (urls.battlefield_background) {
                     battlefield.style.backgroundImage = `linear-gradient(180deg, rgba(16, 10, 26, 0.18), rgba(16, 10, 26, 0.9)), url("${urls.battlefield_background}")`;
                 }
-                setCharacterImage(playerImg, playerFallback, urls.necromancer_player);
-                setCharacterImage(ghostImg, ghostFallback, urls.necromancer_player);
+                setCharacterImage(playerImg, urls.necromancer_player);
+                setCharacterImage(ghostImg, urls.necromancer_stone);
             }
 
             function applyOpponentIdentity() {
                 opponentName.textContent = opponentLabel;
                 ghostImg.alt = opponentLabel;
-                ghostFallback.textContent = opponentIsOfficialGhost ? "G" : "N";
                 world.classList.toggle("official-ghost", opponentIsOfficialGhost);
-                const opponentSprite = opponentIsOfficialGhost ? assetUrls.necromancer_ghost : assetUrls.necromancer_player;
-                setCharacterImage(ghostImg, ghostFallback, opponentSprite);
+                const opponentSprite = opponentIsOfficialGhost ? assetUrls.necromancer_ghost : assetUrls.necromancer_stone;
+                setCharacterImage(ghostImg, opponentSprite);
             }
 
-            function setCharacterImage(img, fallback, url) {
-                if (!url) {
-                    img.hidden = true;
-                    fallback.hidden = false;
-                    return;
-                }
-                img.src = url;
-                img.hidden = false;
-                fallback.hidden = true;
+            function setCharacterImage(img, url) {
+                // No placeholder art: show the sprite, or nothing if it is missing/fails.
                 img.onerror = () => {
                     img.hidden = true;
-                    fallback.hidden = false;
                 };
+                if (url) {
+                    img.hidden = false;
+                    img.src = url;
+                } else {
+                    img.hidden = true;
+                    img.removeAttribute("src");
+                }
             }
 
             function registerParameters() {
@@ -1963,6 +1947,10 @@
                 projectileEl.style.transform = `translate(${from.x}px, ${from.y}px) translate(-50%, -50%)`;
                 effectLayer.appendChild(projectileEl);
 
+                // Force the browser to commit the start position before tweening to the
+                // end, so the flight always animates — even when a shield was raised the
+                // same beat (otherwise the transition is skipped and it jumps to target).
+                void projectileEl.offsetWidth;
                 requestAnimationFrame(() => {
                     projectileEl.style.transform = `translate(${to.x}px, ${to.y}px) translate(-50%, -50%)`;
                 });
