@@ -1093,9 +1093,9 @@
         @media (min-width: 600px) and (orientation: portrait) {
             .combat-row {
                 inset: 44px 0 0;
-                padding: 0 3vw 16px;
-                grid-template-columns: minmax(0, 1fr) minmax(60px, 13vw) minmax(0, 1fr);
-                gap: 6px;
+                padding: 0 2vw 16px;
+                grid-template-columns: minmax(0, 1fr) minmax(70px, 13vw) minmax(0, 1fr);
+                gap: 4px;
             }
 
             .hp-panel {
@@ -1111,9 +1111,14 @@
                 height: 26px;
             }
 
+            /* Square wrap matched to the square (512x512) sprite so it fills with no
+               empty band. max-width:none lifts the base 190px cap that was the real
+               size limiter; width is held just under the side-column width so two
+               characters + the VS icon span the full 720px without overflowing. */
             .character-wrap {
-                width: min(50vw, 330px);
-                height: min(34dvh, 300px);
+                width: min(40vw, 285px);
+                max-width: none;
+                height: min(34dvh, 285px);
                 min-width: 0;
                 min-height: 0;
             }
@@ -1290,19 +1295,30 @@
                 dvhMeter.style.cssText = "position:fixed;top:0;left:0;height:100dvh;width:0;pointer-events:none;visibility:hidden";
                 document.body.appendChild(dvhMeter);
                 function fmt(n) { return Math.round(n); }
+                function box(el) { return el ? fmt(el.clientWidth) + "x" + fmt(el.clientHeight) : "?"; }
+                function rendered(img) {
+                    // Visible bitmap size after object-fit:contain inside its element box.
+                    if (!img || !img.naturalWidth) return "?";
+                    const bw = img.clientWidth, bh = img.clientHeight;
+                    const ar = img.naturalWidth / img.naturalHeight;
+                    let w = bw, h = bw / ar;
+                    if (h > bh) { h = bh; w = bh * ar; }
+                    return fmt(w) + "x" + fmt(h);
+                }
                 function update() {
                     const gw = document.getElementById("game-world");
-                    const dvh100 = dvhMeter.clientHeight;
-                    const bodyH = document.body.clientHeight;
-                    const gameH = gw ? gw.clientHeight : -1;
+                    const pImg = document.getElementById("player-img");
+                    const wrap = pImg ? pImg.closest(".character-wrap") : null;
+                    const vs = document.querySelector(".versus");
+                    const mq = window.matchMedia("(min-width: 600px) and (orientation: portrait)").matches;
                     probe.textContent =
-                        "iframe(win.innerH)=" + fmt(window.innerHeight) +
-                        "  docClientH=" + fmt(document.documentElement.clientHeight) + "\n" +
-                        "100dvh=" + fmt(dvh100) + "   bodyH(100%)=" + fmt(bodyH) + "\n" +
-                        "game-worldH=" + fmt(gameH) +
-                        "   dvh<body? " + (dvh100 < bodyH - 1 ? "YES (bug)" : "no") + "\n" +
-                        "win.innerW=" + fmt(window.innerWidth) +
-                        "  docClientW=" + fmt(document.documentElement.clientWidth);
+                        "viewport " + fmt(window.innerWidth) + "x" + fmt(window.innerHeight) +
+                        "  mq(>=600&portrait)=" + mq + "\n" +
+                        "game-worldH=" + (gw ? fmt(gw.clientHeight) : "?") +
+                        "  body=" + fmt(document.body.clientHeight) + "\n" +
+                        "char-wrap=" + box(wrap) + "  img-box=" + box(pImg) + "\n" +
+                        "img-NATURAL=" + (pImg && pImg.naturalWidth ? pImg.naturalWidth + "x" + pImg.naturalHeight : "?") +
+                        "\nimg-VISIBLE=" + rendered(pImg) + "  versus=" + box(vs);
                     if (typeof lib !== "undefined" && lib.log) {
                         lib.log("[probe] " + probe.textContent.replace(/\n/g, " | "));
                     }
@@ -1312,6 +1328,9 @@
                 window.addEventListener("resize", update);
                 setTimeout(update, 500);
                 setTimeout(update, 1500);
+                setTimeout(update, 3000);
+                const pImgEl = document.getElementById("player-img");
+                if (pImgEl) pImgEl.addEventListener("load", update);
             })();
             // ===== END TEMP DEBUG PROBE =====
 
@@ -2694,8 +2713,8 @@
             }
 
             function projectile(actor, target, type) {
-                const from = centerOf(combatElement(actor));
-                const to = centerOf(combatElement(target));
+                const from = centerOf(effectAnchor(actor));
+                const to = centerOf(effectAnchor(target));
 
                 // Muzzle flash at the attacker so the shot clearly reads as "fired".
                 const flash = document.createElement("div");
@@ -2726,7 +2745,7 @@
 
             function raiseShield(target) {
                 playSound("shield_sfx");
-                const center = centerOf(combatElement(target));
+                const center = centerOf(effectAnchor(target));
                 const shield = document.createElement("div");
                 shield.className = "effect-shield held";
                 shield.style.left = `${center.x}px`;
@@ -2751,7 +2770,7 @@
             }
 
             function showBurst(target, kind) {
-                const center = centerOf(combatElement(target));
+                const center = centerOf(effectAnchor(target));
                 const burst = document.createElement("div");
                 burst.className = `effect-burst ${kind}`;
                 burst.style.left = `${center.x}px`;
@@ -2761,7 +2780,7 @@
             }
 
             function healParticles(target) {
-                const center = centerOf(combatElement(target));
+                const center = centerOf(effectAnchor(target));
                 for (let i = 0; i < 10; i++) {
                     const particle = document.createElement("div");
                     particle.className = "effect-heal";
@@ -2782,7 +2801,7 @@
             }
 
             function floatNumber(target, text, kind) {
-                const center = centerOf(combatElement(target));
+                const center = centerOf(effectAnchor(target));
                 const node = document.createElement("div");
                 node.className = `float-text ${kind}`;
                 node.textContent = text;
@@ -2815,8 +2834,8 @@
             }
 
             async function soulExtraction() {
-                const from = centerOf(combatElement("player"));
-                const to = centerOf(combatElement("ghost"));
+                const from = centerOf(effectAnchor("player"));
+                const to = centerOf(effectAnchor("ghost"));
                 const souls = [];
                 for (let i = 0; i < 18; i++) {
                     const soul = document.createElement("div");
@@ -2843,6 +2862,13 @@
 
             function combatElement(target) {
                 return target === "player" ? playerCombatant : ghostCombatant;
+            }
+
+            // Effects should land ON the character art, not on the whole HP+character
+            // column — that column's center sits in the empty band above the sprite.
+            function effectAnchor(target) {
+                const c = combatElement(target);
+                return c.querySelector(".character-wrap") || c;
             }
 
             function centerOf(element) {
