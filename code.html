@@ -305,6 +305,7 @@
             background: rgba(0, 0, 0, 0.36);
             box-shadow: inset 0 0 28px rgba(0, 0, 0, 0.44), 0 10px 26px rgba(0, 0, 0, 0.35);
             touch-action: none;
+            position: relative;
         }
 
         #grid-container.locked {
@@ -383,6 +384,39 @@
         .tile.removing {
             opacity: 0;
             transform: scale(0.68);
+        }
+
+        /* Selection trail: one reused SVG with two polylines (bright line + faux glow).
+           pointer-events:none so it never interferes with tile hit-testing. */
+        .trail-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 3;
+            pointer-events: none;
+            overflow: visible;
+        }
+
+        .trail-overlay .trail-line,
+        .trail-overlay .trail-glow {
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .trail-overlay .trail-glow {
+            stroke: rgba(255, 226, 140, 0.26);
+        }
+
+        .trail-overlay .trail-line {
+            stroke: rgba(255, 241, 195, 0.92);
+        }
+
+        .trail-overlay.invalid .trail-glow {
+            stroke: rgba(255, 88, 99, 0.26);
+        }
+
+        .trail-overlay.invalid .trail-line {
+            stroke: rgba(255, 142, 148, 0.95);
         }
 
         .hint-bar {
@@ -1078,6 +1112,12 @@
             let healingDone = 0;
             let selection = null;
             let selectionIsValid = false;
+            // Selection-trail overlay: reused across drags; geometry cached per drag.
+            let trailSvg = null;
+            let trailGlow = null;
+            let trailLine = null;
+            let trailGeo = null;
+            let lastHover = null; // last grid cell processed this drag — skips same-cell churn
             let resolving = false;
             let gameOver = false;
             let editMode = mode === "edit";
@@ -1347,6 +1387,8 @@
                 const cell = readCell(tile);
                 selection = { pointerId: event.pointerId, anchor: cell, cells: [cell], invalid: false };
                 selectionIsValid = false;
+                trailGeo = computeTrailGeometry(); // read layout once per drag, not per move
+                lastHover = cell;
                 updateSelectionMarks();
                 playSound("block_select_sfx");
             }
@@ -1356,7 +1398,11 @@
                 event.preventDefault();
                 const tile = tileFromPoint(event.clientX, event.clientY);
                 if (!tile) return;
-                extendTrail(readCell(tile));
+                const cell = readCell(tile);
+                // Same cell as last move: nothing can change — skip the heavy redraw entirely.
+                if (lastHover && lastHover.row === cell.row && lastHover.col === cell.col) return;
+                lastHover = cell;
+                extendTrail(cell);
                 updateSelectionMarks();
             }
 
@@ -1497,6 +1543,62 @@
                     tile.classList.add("selected");
                     if (selection.invalid) tile.classList.add("invalid");
                 });
+                renderTrail();
+            }
+
+            // Cell centres are derived analytically from the (uniform) grid geometry, read
+            // once per drag — no per-tile getBoundingClientRect, so no layout thrash on move.
+            function computeTrailGeometry() {
+                const cs = getComputedStyle(gridContainer);
+                const padX = parseFloat(cs.paddingLeft) || 0;
+                const padY = parseFloat(cs.paddingTop) || 0;
+                const gap = parseFloat(cs.columnGap || cs.gap) || 0;
+                const innerW = gridContainer.clientWidth - padX - (parseFloat(cs.paddingRight) || 0);
+                const cell = (innerW - (gridSize - 1) * gap) / gridSize;
+                return { padX, padY, gap, cell };
+            }
+
+            function ensureTrailOverlay() {
+                if (!trailSvg) {
+                    const ns = "http://www.w3.org/2000/svg";
+                    trailSvg = document.createElementNS(ns, "svg");
+                    trailSvg.setAttribute("class", "trail-overlay");
+                    trailGlow = document.createElementNS(ns, "polyline");
+                    trailGlow.setAttribute("class", "trail-glow");
+                    trailLine = document.createElementNS(ns, "polyline");
+                    trailLine.setAttribute("class", "trail-line");
+                    trailSvg.appendChild(trailGlow);
+                    trailSvg.appendChild(trailLine);
+                }
+                // renderGrid() wipes the container each round, so re-attach if detached.
+                if (trailSvg.parentNode !== gridContainer) gridContainer.appendChild(trailSvg);
+                return trailSvg;
+            }
+
+            function renderTrail() {
+                if (!selection || !trailGeo || selection.cells.length < 2) {
+                    hideTrail();
+                    return;
+                }
+                const { padX, padY, gap, cell } = trailGeo;
+                const step = cell + gap;
+                const points = selection.cells.map((c) => {
+                    const x = padX + c.col * step + cell / 2;
+                    const y = padY + c.row * step + cell / 2;
+                    return `${x.toFixed(1)},${y.toFixed(1)}`;
+                }).join(" ");
+                const width = Math.max(3, cell * 0.16);
+                ensureTrailOverlay();
+                trailSvg.style.display = "block";
+                trailSvg.classList.toggle("invalid", !!selection.invalid);
+                trailGlow.setAttribute("stroke-width", (width * 2.4).toFixed(1));
+                trailGlow.setAttribute("points", points);
+                trailLine.setAttribute("stroke-width", width.toFixed(1));
+                trailLine.setAttribute("points", points);
+            }
+
+            function hideTrail() {
+                if (trailSvg) trailSvg.style.display = "none";
             }
 
             function flashInvalidSelection() {
@@ -1511,6 +1613,9 @@
             function clearSelection() {
                 selection = null;
                 selectionIsValid = false;
+                trailGeo = null;
+                lastHover = null;
+                hideTrail();
                 gridContainer.querySelectorAll(".tile").forEach((tile) => {
                     tile.classList.remove("selected", "invalid");
                 });
