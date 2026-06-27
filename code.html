@@ -1,0 +1,2156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Necromancer's Clash</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            background: #140d22;
+            color: #f8f4ea;
+            font-family: Georgia, "Times New Roman", serif;
+            touch-action: none;
+            user-select: none;
+        }
+
+        button {
+            font: inherit;
+        }
+
+        #game-world {
+            --battle-height: 42dvh;
+            --gold: #d9b85c;
+            --tile-gap: 6px;
+            position: relative;
+            display: grid;
+            grid-template-rows: minmax(230px, var(--battle-height)) minmax(0, 1fr);
+            width: 100%;
+            height: 100dvh;
+            min-height: 100%;
+            overflow: hidden;
+            background:
+                linear-gradient(180deg, rgba(12, 8, 20, 0.18), rgba(12, 8, 20, 0.74)),
+                radial-gradient(circle at 50% 8%, rgba(57, 129, 157, 0.18), transparent 30%),
+                #140d22;
+        }
+
+        #battlefield {
+            position: relative;
+            overflow: hidden;
+            background:
+                linear-gradient(180deg, rgba(16, 10, 26, 0.18), rgba(16, 10, 26, 0.9)),
+                #211432;
+            background-position: center;
+            background-size: cover;
+            border-bottom: 2px solid rgba(217, 184, 92, 0.42);
+        }
+
+        #battlefield::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, rgba(4, 2, 10, 0.48), transparent 26%, transparent 74%, rgba(4, 2, 10, 0.48));
+            pointer-events: none;
+        }
+
+        .battle-top {
+            position: relative;
+            z-index: 2;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: start;
+            gap: 12px;
+            padding: 12px 18px 0;
+        }
+
+        .game-title {
+            margin: 0;
+            color: #fff7d2;
+            font-size: 24px;
+            line-height: 1;
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.72);
+        }
+
+        #round-status {
+            justify-self: end;
+            min-height: 30px;
+            max-width: 270px;
+            padding: 4px 0;
+            color: #f7e7b0;
+            font-size: 14px;
+            line-height: 1.2;
+            text-align: right;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+        }
+
+        .combat-row {
+            position: absolute;
+            z-index: 2;
+            inset: 54px 0 0;
+            display: grid;
+            grid-template-columns: minmax(130px, 1fr) minmax(60px, 14vw) minmax(130px, 1fr);
+            align-items: end;
+            gap: 8px;
+            padding: 0 5vw 10px;
+        }
+
+        .combatant {
+            position: relative;
+            display: grid;
+            justify-items: center;
+            align-content: end;
+            min-width: 0;
+            height: 100%;
+        }
+
+        .combatant.ghost-side {
+            justify-self: end;
+        }
+
+        .combatant.player-side {
+            justify-self: start;
+        }
+
+        .hp-panel {
+            width: min(210px, 34vw);
+            margin-bottom: 6px;
+            padding: 0;
+            filter: drop-shadow(0 3px 9px rgba(0, 0, 0, 0.7));
+        }
+
+        .name-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            color: #fff4cf;
+            font-size: 13px;
+            line-height: 1;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.92);
+        }
+
+        .hp-track {
+            width: 100%;
+            height: 12px;
+            margin-top: 5px;
+            overflow: hidden;
+            border: 1px solid rgba(217, 184, 92, 0.62);
+            border-radius: 7px;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .hp-fill {
+            width: 100%;
+            height: 100%;
+            border-radius: 7px;
+            background: linear-gradient(90deg, #c92231, #ff6b5f);
+            transition: width 260ms ease;
+        }
+
+        .character-wrap {
+            position: relative;
+            width: min(25vw, 190px);
+            max-width: 190px;
+            min-width: 108px;
+            height: min(27dvh, 218px);
+            min-height: 128px;
+            display: grid;
+            place-items: end center;
+        }
+
+        .character-img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.68));
+            transition: transform 180ms ease, filter 180ms ease;
+        }
+
+        #game-world.official-ghost .ghost-side .character-img {
+            filter: drop-shadow(0 0 18px rgba(105, 228, 255, 0.5)) drop-shadow(0 12px 18px rgba(0, 0, 0, 0.68));
+        }
+
+        .fallback-character {
+            display: grid;
+            place-items: center;
+            width: 92px;
+            height: 132px;
+            border: 0;
+            border-radius: 50% 50% 12px 12px;
+            background: linear-gradient(180deg, #3f2d55, #15101f);
+            color: #fff4cf;
+            font-size: 42px;
+            font-weight: 700;
+        }
+
+        .status-row {
+            position: absolute;
+            top: 4px;
+            display: flex;
+            gap: 6px;
+            min-height: 26px;
+        }
+
+        .status-chip {
+            display: grid;
+            place-items: center;
+            min-width: 28px;
+            height: 26px;
+            padding: 0 7px;
+            border: 1px solid rgba(255, 255, 255, 0.38);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.58);
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-chip.shield {
+            border-color: #78b3ff;
+            background: rgba(47, 112, 210, 0.38);
+        }
+
+        .status-chip.cancel {
+            border-color: #8ee7ff;
+            background: rgba(33, 168, 205, 0.38);
+        }
+
+        .versus {
+            align-self: center;
+            justify-self: center;
+            width: 56px;
+            height: 56px;
+            display: grid;
+            place-items: center;
+            border: 1px solid rgba(217, 184, 92, 0.5);
+            border-radius: 50%;
+            background: rgba(5, 4, 10, 0.6);
+            color: #ffe092;
+            font-size: 18px;
+            font-weight: 700;
+            text-shadow: 0 0 12px rgba(217, 184, 92, 0.8);
+        }
+
+        #effect-layer {
+            position: absolute;
+            z-index: 5;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        #grid-zone {
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr) auto;
+            min-height: 0;
+            padding: 8px 12px 12px;
+            background:
+                linear-gradient(180deg, rgba(8, 5, 16, 0.94), rgba(12, 8, 22, 0.98)),
+                #0d0815;
+        }
+
+        .action-strip {
+            display: grid;
+            grid-template-columns: minmax(90px, 1fr) auto minmax(90px, 1fr);
+            align-items: center;
+            gap: 10px;
+            width: min(900px, 100%);
+            margin: 0 auto 7px;
+        }
+
+        .action-card {
+            min-height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 0 4px;
+            border: 0;
+            border-radius: 0;
+            background: transparent;
+            color: #f5e9c8;
+            font-size: 13px;
+            text-align: center;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.88);
+        }
+
+        .action-card img {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+        }
+
+        .round-counter {
+            min-width: 92px;
+            color: #d8cda8;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        #grid-shell {
+            min-height: 0;
+            display: grid;
+            place-items: center;
+        }
+
+        #grid-container {
+            --grid-size: 6;
+            display: grid;
+            grid-template-columns: repeat(var(--grid-size), minmax(0, 1fr));
+            grid-template-rows: repeat(var(--grid-size), minmax(0, 1fr));
+            gap: var(--tile-gap);
+            width: min(92vw, max(250px, calc(100dvh - var(--battle-height) - 88px)), 520px);
+            max-width: 100%;
+            aspect-ratio: 1 / 1;
+            padding: 8px;
+            border: 1px solid rgba(217, 184, 92, 0.5);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.36);
+            box-shadow: inset 0 0 28px rgba(0, 0, 0, 0.44), 0 10px 26px rgba(0, 0, 0, 0.35);
+            touch-action: none;
+        }
+
+        #grid-container.locked {
+            opacity: 0.72;
+            pointer-events: none;
+        }
+
+        .tile {
+            position: relative;
+            min-width: 0;
+            min-height: 0;
+            display: grid;
+            place-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.08);
+            cursor: pointer;
+            overflow: hidden;
+            padding: 0;
+            transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease, opacity 160ms ease;
+            touch-action: none;
+        }
+
+        .tile::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0));
+            pointer-events: none;
+        }
+
+        .tile img {
+            width: 92%;
+            height: 92%;
+            object-fit: contain;
+            pointer-events: none;
+        }
+
+        .tile-fallback {
+            position: relative;
+            z-index: 1;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
+        }
+
+        .tile.sword {
+            background: linear-gradient(180deg, rgba(136, 34, 46, 0.78), rgba(68, 18, 29, 0.78));
+        }
+
+        .tile.heart {
+            background: linear-gradient(180deg, rgba(164, 57, 122, 0.78), rgba(79, 26, 66, 0.78));
+        }
+
+        .tile.shield {
+            background: linear-gradient(180deg, rgba(52, 98, 166, 0.78), rgba(25, 45, 88, 0.78));
+        }
+
+        .tile.ice {
+            background: linear-gradient(180deg, rgba(38, 150, 175, 0.78), rgba(20, 70, 90, 0.78));
+        }
+
+        .tile.selected {
+            z-index: 2;
+            border-color: #ffe28c;
+            box-shadow: 0 0 0 2px rgba(255, 226, 140, 0.72), 0 0 16px rgba(255, 226, 140, 0.72);
+            transform: scale(1.04);
+        }
+
+        .tile.invalid {
+            border-color: #ff6873;
+            box-shadow: 0 0 0 2px rgba(255, 88, 99, 0.68), 0 0 16px rgba(255, 88, 99, 0.62);
+        }
+
+        .tile.removing {
+            opacity: 0;
+            transform: scale(0.68);
+        }
+
+        .hint-bar {
+            width: min(900px, 100%);
+            margin: 7px auto 0;
+            color: #d7caa3;
+            font-size: 13px;
+            line-height: 1.2;
+            text-align: center;
+        }
+
+        .effect-projectile {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #ff4b4b;
+            box-shadow: 0 0 18px #ff4b4b;
+            transform: translate(-50%, -50%);
+            transition: transform 420ms ease;
+        }
+
+        .effect-projectile.ice {
+            background: #8beaff;
+            box-shadow: 0 0 20px #70e2ff;
+        }
+
+        .effect-burst {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 88px;
+            height: 88px;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            animation: burst 520ms ease forwards;
+        }
+
+        .effect-burst.hit {
+            border: 3px solid rgba(255, 86, 86, 0.9);
+            box-shadow: 0 0 26px rgba(255, 50, 50, 0.75);
+        }
+
+        .effect-burst.block {
+            border: 3px solid rgba(112, 181, 255, 0.94);
+            box-shadow: 0 0 30px rgba(112, 181, 255, 0.9);
+        }
+
+        .effect-burst.ice {
+            border: 3px solid rgba(139, 234, 255, 0.94);
+            box-shadow: 0 0 30px rgba(139, 234, 255, 0.9);
+        }
+
+        .effect-shield {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 160px;
+            height: 160px;
+            border: 4px solid rgba(112, 181, 255, 0.88);
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(83, 157, 255, 0.32), transparent 68%);
+            transform: translate(-50%, -50%);
+            animation: shieldRise 620ms ease forwards;
+        }
+
+        .effect-heal {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #ff86ce;
+            box-shadow: 0 0 14px #ff86ce;
+            animation: healFloat 900ms ease forwards;
+        }
+
+        .soul {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 26px;
+            height: 34px;
+            border-radius: 50% 50% 45% 45%;
+            background: radial-gradient(circle at 50% 35%, #d6f7ff, #4ecaf1 42%, rgba(48, 122, 228, 0.32) 74%);
+            box-shadow: 0 0 20px rgba(108, 226, 255, 0.9);
+            transform: translate(-50%, -50%);
+            animation: soulMove 1400ms ease forwards;
+        }
+
+        .ghost-form {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 120px;
+            height: 160px;
+            border-radius: 50% 50% 40% 40%;
+            background: radial-gradient(circle at 50% 35%, rgba(219, 250, 255, 0.95), rgba(91, 211, 246, 0.72) 42%, rgba(49, 132, 225, 0.18) 76%);
+            box-shadow: 0 0 36px rgba(108, 226, 255, 0.92);
+            transform: translate(-50%, -50%) scale(0.6);
+            animation: ghostForm 1200ms ease forwards;
+        }
+
+        .character-img.hit-shake {
+            animation: hitShake 280ms ease;
+        }
+
+        .character-img.heal-pulse {
+            animation: healPulse 520ms ease;
+        }
+
+        #game-over-screen {
+            position: absolute;
+            z-index: 30;
+            inset: 0;
+            display: none;
+            place-items: center;
+            padding: 24px;
+            background: rgba(0, 0, 0, 0.78);
+        }
+
+        #game-over-screen.visible {
+            display: grid;
+        }
+
+        .game-over-content {
+            width: min(500px, 92vw);
+            padding: 24px;
+            border: 2px solid rgba(217, 184, 92, 0.78);
+            border-radius: 8px;
+            background: rgba(15, 10, 24, 0.96);
+            color: #fff8de;
+            text-align: center;
+            box-shadow: 0 0 36px rgba(0, 0, 0, 0.72);
+        }
+
+        #game-over-title {
+            margin: 0 0 12px;
+            font-size: 34px;
+        }
+
+        #game-over-title.victory {
+            color: #98ffbc;
+        }
+
+        #game-over-title.defeat {
+            color: #ff8088;
+        }
+
+        #game-over-stats {
+            margin-bottom: 18px;
+            color: #e5d7b7;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        .game-button {
+            min-height: 44px;
+            min-width: 150px;
+            padding: 10px 18px;
+            border: 2px solid #8e7228;
+            border-radius: 8px;
+            background: linear-gradient(180deg, #f0ca64, #b98d2c);
+            color: #17101f;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .game-button:active {
+            transform: translateY(1px);
+        }
+
+        @keyframes burst {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.45);
+            }
+            35% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(1.35);
+            }
+        }
+
+        @keyframes shieldRise {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.55);
+            }
+            35% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(1.15);
+            }
+        }
+
+        @keyframes healFloat {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, 20px) scale(0.8);
+            }
+            25% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+                transform: translate(var(--heal-x), -80px) scale(0.2);
+            }
+        }
+
+        @keyframes soulMove {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.55);
+            }
+            18% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+                transform: translate(var(--soul-x), var(--soul-y)) scale(0.18);
+            }
+        }
+
+        @keyframes ghostForm {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.6);
+            }
+            40% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(1.1);
+            }
+        }
+
+        @keyframes hitShake {
+            0%, 100% {
+                transform: translateX(0);
+            }
+            25% {
+                transform: translateX(-8px);
+            }
+            75% {
+                transform: translateX(8px);
+            }
+        }
+
+        @keyframes healPulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            45% {
+                transform: scale(1.06);
+                filter: drop-shadow(0 0 22px rgba(255, 134, 206, 0.9));
+            }
+        }
+
+        /* --- Feedback & timing layer (additive only) --- */
+        .effect-shield.held {
+            animation: shieldHold 1300ms ease-in-out infinite;
+        }
+
+        @keyframes shieldHold {
+            0%, 100% {
+                opacity: 0.85;
+                transform: translate(-50%, -50%) scale(1);
+            }
+            50% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1.06);
+            }
+        }
+
+        .effect-shield.shield-shatter {
+            animation: shieldShatter 420ms ease forwards;
+        }
+
+        @keyframes shieldShatter {
+            0% {
+                opacity: 1;
+                border-width: 4px;
+                transform: translate(-50%, -50%) scale(1.06);
+            }
+            30% {
+                opacity: 1;
+                border-width: 7px;
+                transform: translate(-50%, -50%) scale(1.22);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(1.55);
+            }
+        }
+
+        .combatant.frozen .character-img {
+            filter: drop-shadow(0 0 16px rgba(139, 234, 255, 0.95)) brightness(1.12) saturate(1.45) hue-rotate(150deg);
+            animation: frozenShiver 600ms ease;
+        }
+
+        @keyframes frozenShiver {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-3px); }
+            40% { transform: translateX(3px); }
+            60% { transform: translateX(-2px); }
+            80% { transform: translateX(2px); }
+        }
+
+        .float-text {
+            position: absolute;
+            left: 0;
+            top: 0;
+            z-index: 6;
+            font-size: 27px;
+            font-weight: 700;
+            text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            animation: floatUp 1000ms ease forwards;
+        }
+
+        .float-text.dmg {
+            color: #ff6b5f;
+        }
+
+        .float-text.heal {
+            color: #ff9ad6;
+        }
+
+        @keyframes floatUp {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.6);
+            }
+            20% {
+                opacity: 1;
+                transform: translate(-50%, -90%) scale(1.12);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -150%) scale(1);
+            }
+        }
+
+        .action-card.reveal {
+            animation: cardPop 450ms ease;
+        }
+
+        @keyframes cardPop {
+            0% { transform: scale(1); }
+            40% {
+                transform: scale(1.12);
+                filter: drop-shadow(0 0 10px rgba(255, 226, 140, 0.85));
+            }
+            100% { transform: scale(1); }
+        }
+
+        @media (max-width: 720px), (max-height: 660px) {
+            #game-world {
+                --battle-height: 39dvh;
+                --tile-gap: 4px;
+                grid-template-rows: minmax(206px, var(--battle-height)) minmax(0, 1fr);
+            }
+
+            .battle-top {
+                grid-template-columns: 1fr;
+                gap: 5px;
+                padding: 8px 10px 0;
+            }
+
+            .game-title {
+                display: none;
+            }
+
+            #round-status {
+                justify-self: stretch;
+                max-width: none;
+                min-height: 26px;
+                padding: 5px 8px;
+                font-size: 12px;
+            }
+
+            .combat-row {
+                inset: 40px 0 0;
+                grid-template-columns: minmax(108px, 1fr) 42px minmax(108px, 1fr);
+                padding: 0 8px 6px;
+            }
+
+            .versus {
+                width: 40px;
+                height: 40px;
+                font-size: 14px;
+            }
+
+            .hp-panel {
+                width: min(170px, 44vw);
+                margin-bottom: 8px;
+                padding: 5px;
+            }
+
+            .name-row {
+                font-size: 11px;
+            }
+
+            .character-wrap {
+                width: min(44vw, 200px);
+                height: min(27dvh, 220px);
+                min-width: 118px;
+                min-height: 150px;
+            }
+
+            #grid-zone {
+                padding: 6px 8px 8px;
+            }
+
+            .action-strip {
+                gap: 5px;
+                margin-bottom: 5px;
+            }
+
+            .action-card {
+                min-height: 28px;
+                padding: 4px 5px;
+                font-size: 11px;
+            }
+
+            .action-card img {
+                width: 20px;
+                height: 20px;
+            }
+
+            .round-counter,
+            .hint-bar {
+                font-size: 11px;
+            }
+
+            .round-counter {
+                min-width: 58px;
+            }
+
+            #grid-container {
+                width: min(94vw, max(238px, calc(100dvh - var(--battle-height) - 76px)), 430px);
+                padding: 5px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 1ms !important;
+                transition-duration: 1ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-world">
+        <section id="battlefield">
+            <div class="battle-top">
+                <h1 class="game-title">Necromancer's Clash</h1>
+                <div id="round-status">Drag through 3+ touching blocks of the same kind — any shape works.</div>
+            </div>
+
+            <div class="combat-row">
+                <div class="combatant player-side" id="player-combatant">
+                    <div class="hp-panel">
+                        <div class="name-row">
+                            <span>Player</span>
+                            <span id="player-hp-text">40 / 40</span>
+                        </div>
+                        <div class="hp-track"><div class="hp-fill" id="player-hp-bar"></div></div>
+                    </div>
+                    <div class="character-wrap">
+                        <div class="status-row" id="player-status"></div>
+                        <img class="character-img" id="player-img" alt="Player">
+                        <div class="fallback-character" id="player-fallback" hidden>P</div>
+                    </div>
+                </div>
+
+                <div class="versus">VS</div>
+
+                <div class="combatant ghost-side" id="ghost-combatant">
+                    <div class="hp-panel">
+                        <div class="name-row">
+                            <span id="opponent-name">Opponent</span>
+                            <span id="ghost-hp-text">40 / 40</span>
+                        </div>
+                        <div class="hp-track"><div class="hp-fill" id="ghost-hp-bar"></div></div>
+                    </div>
+                    <div class="character-wrap">
+                        <div class="status-row" id="ghost-status"></div>
+                        <img class="character-img" id="ghost-img" alt="Opponent">
+                        <div class="fallback-character" id="ghost-fallback" hidden>N</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="effect-layer"></div>
+        </section>
+
+        <section id="grid-zone">
+            <div class="action-strip">
+                <div class="action-card" id="player-action-card">Player: waiting</div>
+                <div class="round-counter" id="round-counter">Round 1</div>
+                <div class="action-card" id="ghost-action-card">Opponent: queued</div>
+            </div>
+            <div id="grid-shell">
+                <div id="grid-container" aria-label="Match grid"></div>
+            </div>
+            <div class="hint-bar" id="hint-bar">Trace a path of 3+ matching blocks — line, L, or zig-zag.</div>
+        </section>
+
+        <div id="game-over-screen">
+            <div class="game-over-content">
+                <h2 id="game-over-title">Victory</h2>
+                <div id="game-over-stats"></div>
+                <button class="game-button" id="play-again-btn" type="button">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const LOCAL_ASSET_URLS = {
+            necromancer_player: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782555395927_01KW499HTQFYK8MBGBCQCXAGJ2.necromancer_player.png",
+            necromancer_ghost: "https://d2oir5eh8rty2e.cloudfront.net/assets/images/necromancer_ghost_0abe6c7b-7b26-4d63-89ea-1c8b0a107fd1.webp",
+            battlefield_background: "https://d2oir5eh8rty2e.cloudfront.net/assets/images/battlefield_background_604ae7d3-bf7d-47e6-a644-cebbe40d0235.webp",
+            block_sword: "https://d2oir5eh8rty2e.cloudfront.net/assets/images/block_sword_23711470-7f45-4bd0-b9f5-364ed7588779.webp",
+            block_heart: "https://d2oir5eh8rty2e.cloudfront.net/assets/images/block_heart_4ae14b13-073e-4ab2-86f5-734c9238803b.webp",
+            block_shield: "https://d2oir5eh8rty2e.cloudfront.net/assets/images/block_shield_61ad6e50-e1e8-4fce-8cc9-36bf8d916761.webp",
+            block_ice: "https://d2oir5eh8rty2e.cloudfront.net/assets/images/block_ice_132888fd-5f19-44c3-bc71-53b4443ed1ae.webp",
+            sword_attack_sfx: "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/sword_attack_sfx_ce773fbf-1143-47d3-8fba-502203930999.mp3",
+            heal_sfx: "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/heal_sfx_d93650fd-2951-4457-908b-b9d9e8419ea3.mp3",
+            shield_sfx: "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/shield_sfx_1a25d87b-de73-4c46-ac8a-08cebfb837cf.mp3",
+            ice_freeze_sfx: "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/ice_freeze_sfx_fd511a28-f2bd-44c6-aa32-d47e78bf33d2.mp3",
+            block_select_sfx: "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/block_select_sfx_ac087039-02ba-4472-9b65-67de8ea0a45c.mp3",
+            block_match_sfx: "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/block_match_sfx_cd1722f8-40ea-4901-a581-0915b1700991.mp3",
+            victory_sfx: "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/victory_sfx_4012d81c-3ad4-4f0d-9e47-e49d6e5f8580.mp3",
+            defeat_sfx: "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/defeat_sfx_e5bcc56f-111e-42fe-82ad-02811585c76b.mp3"
+        };
+
+        function installLocalAstrocadeFallback() {
+            if (window.lib) return;
+            window.lib = {
+                getAsset(id) {
+                    return LOCAL_ASSET_URLS[id] ? { url: LOCAL_ASSET_URLS[id], type: id.includes("_sfx") || id.includes("music") ? "audio" : "image" } : undefined;
+                },
+                async getUserGameState() {
+                    try {
+                        const raw = localStorage.getItem("necromancers-clash-state");
+                        return { state: raw ? JSON.parse(raw) : null };
+                    } catch (error) {
+                        return { state: null };
+                    }
+                },
+                async saveUserGameState(state) {
+                    try {
+                        localStorage.setItem("necromancers-clash-state", JSON.stringify(state));
+                    } catch (error) {}
+                    return { success: true, state };
+                },
+                showGameParameters() {},
+                log(message) {
+                    console.log(message);
+                }
+            };
+        }
+
+        async function run(mode) {
+            if (window.__necromancersClashStarted) return;
+            window.__necromancersClashStarted = true;
+            installLocalAstrocadeFallback();
+
+            const BLOCK_TYPES = ["sword", "heart", "shield", "ice"];
+            const BLOCK_META = {
+                sword: { label: "Sword", short: "ATK", sound: "sword_attack_sfx" },
+                heart: { label: "Heart", short: "HEAL", sound: "heal_sfx" },
+                shield: { label: "Shield", short: "SHLD", sound: "shield_sfx" },
+                ice: { label: "Ice", short: "ICE", sound: "ice_freeze_sfx" }
+            };
+            const DEFAULT_SETTINGS = {
+                startingHP: 40,
+                damageMultiplier: 1,
+                healMultiplier: 1,
+                gridSize: 6,
+                blockDistribution: { sword: 25, heart: 25, shield: 25, ice: 25 }
+            };
+            const DEFAULT_GHOST_ACTIONS = [
+                { type: "sword", count: 3, direction: "default" },
+                { type: "shield", count: 3, direction: "default" },
+                { type: "sword", count: 3, direction: "default" },
+                { type: "heart", count: 3, direction: "default" },
+                { type: "sword", count: 3, direction: "default" },
+                { type: "ice", count: 3, direction: "default" }
+            ];
+
+            const world = document.getElementById("game-world");
+            const battlefield = document.getElementById("battlefield");
+            const effectLayer = document.getElementById("effect-layer");
+            const gridContainer = document.getElementById("grid-container");
+            const roundStatus = document.getElementById("round-status");
+            const hintBar = document.getElementById("hint-bar");
+            const playerActionCard = document.getElementById("player-action-card");
+            const ghostActionCard = document.getElementById("ghost-action-card");
+            const roundCounter = document.getElementById("round-counter");
+            const playerHpText = document.getElementById("player-hp-text");
+            const ghostHpText = document.getElementById("ghost-hp-text");
+            const playerHpBar = document.getElementById("player-hp-bar");
+            const ghostHpBar = document.getElementById("ghost-hp-bar");
+            const playerStatus = document.getElementById("player-status");
+            const ghostStatus = document.getElementById("ghost-status");
+            const playerImg = document.getElementById("player-img");
+            const ghostImg = document.getElementById("ghost-img");
+            const playerFallback = document.getElementById("player-fallback");
+            const ghostFallback = document.getElementById("ghost-fallback");
+            const opponentName = document.getElementById("opponent-name");
+            const playerCombatant = document.getElementById("player-combatant");
+            const ghostCombatant = document.getElementById("ghost-combatant");
+            const gameOverScreen = document.getElementById("game-over-screen");
+            const gameOverTitle = document.getElementById("game-over-title");
+            const gameOverStats = document.getElementById("game-over-stats");
+            const playAgainBtn = document.getElementById("play-again-btn");
+
+            window.gameConfig = window.gameConfig || {};
+            window.gameConfig.settings = mergeSettings(DEFAULT_SETTINGS, window.gameConfig.settings || {});
+            const settings = window.gameConfig.settings;
+            const gridSize = clamp(Number(settings.gridSize) || 6, 5, 7);
+            settings.gridSize = gridSize;
+            gridContainer.style.setProperty("--grid-size", String(gridSize));
+
+            const assetUrls = collectAssetUrls();
+            await loadCoreImages(assetUrls);
+            applyVisualAssets(assetUrls);
+            registerParameters();
+
+            let grid = createPlayableGrid();
+            let player = { hp: settings.startingHP, maxHp: settings.startingHP };
+            let ghost = { hp: settings.startingHP, maxHp: settings.startingHP };
+            let activeGhostActions = DEFAULT_GHOST_ACTIONS.slice();
+            let ghostActionIndex = 0;
+            let currentRunActions = [];
+            let startedWithoutOfficialGhost = true;
+            let opponentLabel = "Opponent";
+            let opponentIsOfficialGhost = false;
+            let roundNumber = 1;
+            let damageDealt = 0;
+            let healingDone = 0;
+            let selection = null;
+            let selectionIsValid = false;
+            let resolving = false;
+            let gameOver = false;
+            let editMode = mode === "edit";
+
+            await loadHistory();
+            applyOpponentIdentity();
+            renderAll();
+            setMessage(editMode ? "Edit Mode" : "Drag through 3+ touching blocks of the same kind — any shape works.");
+
+            if (editMode) {
+                gridContainer.classList.add("locked");
+                hintBar.textContent = "Edit mode preview.";
+            } else {
+                bindInput();
+            }
+
+            playAgainBtn.addEventListener("click", () => {
+                location.reload();
+            });
+
+            function mergeSettings(base, override) {
+                const merged = {
+                    startingHP: override.startingHP ?? base.startingHP,
+                    damageMultiplier: override.damageMultiplier ?? base.damageMultiplier,
+                    healMultiplier: override.healMultiplier ?? base.healMultiplier,
+                    gridSize: override.gridSize ?? base.gridSize,
+                    blockDistribution: {
+                        sword: override.blockDistribution?.sword ?? base.blockDistribution.sword,
+                        heart: override.blockDistribution?.heart ?? base.blockDistribution.heart,
+                        shield: override.blockDistribution?.shield ?? base.blockDistribution.shield,
+                        ice: override.blockDistribution?.ice ?? base.blockDistribution.ice
+                    }
+                };
+                merged.startingHP = clamp(Number(merged.startingHP) || base.startingHP, 20, 300);
+                merged.damageMultiplier = Number(merged.damageMultiplier) || 1;
+                merged.healMultiplier = Number(merged.healMultiplier) || 1;
+                return merged;
+            }
+
+            function collectAssetUrls() {
+                const ids = [
+                    "necromancer_player",
+                    "necromancer_ghost",
+                    "battlefield_background",
+                    "block_sword",
+                    "block_heart",
+                    "block_shield",
+                    "block_ice",
+                    "sword_attack_sfx",
+                    "heal_sfx",
+                    "shield_sfx",
+                    "ice_freeze_sfx",
+                    "block_select_sfx",
+                    "block_match_sfx",
+                    "victory_sfx",
+                    "defeat_sfx"
+                ];
+                const urls = {};
+                ids.forEach((id) => {
+                    try {
+                        const asset = window.lib && typeof lib.getAsset === "function" ? lib.getAsset(id) : null;
+                        urls[id] = asset && asset.url ? asset.url : (LOCAL_ASSET_URLS[id] || "");
+                    } catch (error) {
+                        urls[id] = "";
+                    }
+                });
+                return urls;
+            }
+
+            async function loadCoreImages(urls) {
+                const imageIds = [
+                    "necromancer_player",
+                    "necromancer_ghost",
+                    "battlefield_background",
+                    "block_sword",
+                    "block_heart",
+                    "block_shield",
+                    "block_ice"
+                ];
+                await Promise.all(imageIds.map((id) => preloadImage(urls[id]).then((ok) => {
+                    if (!ok) urls[id] = "";
+                })));
+            }
+
+            function preloadImage(url) {
+                if (!url) return Promise.resolve(false);
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    const timer = setTimeout(() => resolve(false), 2500);
+                    img.onload = () => {
+                        clearTimeout(timer);
+                        resolve(true);
+                    };
+                    img.onerror = () => {
+                        clearTimeout(timer);
+                        resolve(false);
+                    };
+                    img.src = url;
+                });
+            }
+
+            function applyVisualAssets(urls) {
+                if (urls.battlefield_background) {
+                    battlefield.style.backgroundImage = `linear-gradient(180deg, rgba(16, 10, 26, 0.18), rgba(16, 10, 26, 0.9)), url("${urls.battlefield_background}")`;
+                }
+                setCharacterImage(playerImg, playerFallback, urls.necromancer_player);
+                setCharacterImage(ghostImg, ghostFallback, urls.necromancer_player);
+            }
+
+            function applyOpponentIdentity() {
+                opponentName.textContent = opponentLabel;
+                ghostImg.alt = opponentLabel;
+                ghostFallback.textContent = opponentIsOfficialGhost ? "G" : "N";
+                world.classList.toggle("official-ghost", opponentIsOfficialGhost);
+                const opponentSprite = opponentIsOfficialGhost ? assetUrls.necromancer_ghost : assetUrls.necromancer_player;
+                setCharacterImage(ghostImg, ghostFallback, opponentSprite);
+            }
+
+            function setCharacterImage(img, fallback, url) {
+                if (!url) {
+                    img.hidden = true;
+                    fallback.hidden = false;
+                    return;
+                }
+                img.src = url;
+                img.hidden = false;
+                fallback.hidden = true;
+                img.onerror = () => {
+                    img.hidden = true;
+                    fallback.hidden = false;
+                };
+            }
+
+            function registerParameters() {
+                if (!window.lib || typeof lib.showGameParameters !== "function") return;
+                try {
+                    lib.showGameParameters({
+                        name: "Game Settings",
+                        params: {
+                            "Starting HP": { key: "settings.startingHP", type: "slider", min: 20, max: 200, step: 10 },
+                            "Damage Multiplier": { key: "settings.damageMultiplier", type: "slider", min: 0.5, max: 2, step: 0.1 },
+                            "Heal Multiplier": { key: "settings.healMultiplier", type: "slider", min: 0.5, max: 2, step: 0.1 },
+                            "Grid Size": {
+                                key: "settings.gridSize",
+                                type: "dropdown",
+                                options: [
+                                    { label: "5x5", value: 5 },
+                                    { label: "6x6", value: 6 },
+                                    { label: "7x7", value: 7 }
+                                ]
+                            },
+                            "Sword Block %": { key: "settings.blockDistribution.sword", type: "slider", min: 10, max: 40, step: 5 },
+                            "Heart Block %": { key: "settings.blockDistribution.heart", type: "slider", min: 10, max: 40, step: 5 },
+                            "Shield Block %": { key: "settings.blockDistribution.shield", type: "slider", min: 10, max: 40, step: 5 },
+                            "Ice Block %": { key: "settings.blockDistribution.ice", type: "slider", min: 10, max: 40, step: 5 }
+                        }
+                    });
+                } catch (error) {
+                    logError("showGameParameters failed", error);
+                }
+            }
+
+            async function loadHistory() {
+                let savedState = null;
+                try {
+                    if (window.lib && typeof lib.getUserGameState === "function") {
+                        const response = await lib.getUserGameState();
+                        savedState = response && response.state ? response.state : null;
+                    }
+                } catch (error) {
+                    logError("getUserGameState failed", error);
+                }
+
+                const normalized = normalizeSavedState(savedState);
+                startedWithoutOfficialGhost = !normalized.hasOfficialGhost;
+                if (normalized.hasOfficialGhost) {
+                    // You now fight your own ghost: an exact replay of your last winning run.
+                    activeGhostActions = normalized.ghostActions;
+                    opponentLabel = "Your Ghost";
+                    opponentIsOfficialGhost = true;
+                    setMessage("You face your own ghost — your last run repeats, move for move.");
+                } else {
+                    // No history yet: a wild creature attacks, following the ritual pattern.
+                    activeGhostActions = DEFAULT_GHOST_ACTIONS.slice();
+                    opponentLabel = "Wild Wraith";
+                    opponentIsOfficialGhost = false;
+                    setMessage("First run: a wild wraith attacks. Beat it to forge your ghost.");
+                }
+            }
+
+            function normalizeSavedState(state) {
+                // Two states only: either there is a saved ghost (your last winning run)
+                // or there is not (you face the first-run ritual creature).
+                if (!state) {
+                    return { ghostActions: [], hasOfficialGhost: false };
+                }
+                const actions = normalizeActionList(state.ghostActions);
+                return {
+                    ghostActions: actions,
+                    hasOfficialGhost: actions.length > 0
+                };
+            }
+
+            function normalizeActionList(actions) {
+                if (!Array.isArray(actions)) return [];
+                return actions.map(normalizeAction).filter(Boolean).slice(0, 120);
+            }
+
+            function normalizeAction(action) {
+                if (typeof action === "string") {
+                    return BLOCK_TYPES.includes(action) ? { type: action, count: 3, direction: "default" } : null;
+                }
+                if (!action || !BLOCK_TYPES.includes(action.type)) return null;
+                return {
+                    type: action.type,
+                    count: clamp(Number(action.count) || 3, 3, gridSize),
+                    direction: typeof action.direction === "string" ? action.direction : "default"
+                };
+            }
+
+            function bindInput() {
+                gridContainer.addEventListener("pointerdown", onPointerDown);
+                gridContainer.addEventListener("pointermove", onPointerMove);
+                gridContainer.addEventListener("pointerup", onPointerUp);
+                gridContainer.addEventListener("pointercancel", clearSelection);
+                gridContainer.addEventListener("lostpointercapture", () => {
+                    if (selection && !resolving) clearSelection();
+                });
+            }
+
+            function onPointerDown(event) {
+                if (resolving || gameOver || editMode) return;
+                const tile = event.target.closest(".tile");
+                if (!tile || !gridContainer.contains(tile)) return;
+                event.preventDefault();
+                gridContainer.setPointerCapture(event.pointerId);
+                const cell = readCell(tile);
+                selection = { pointerId: event.pointerId, anchor: cell, cells: [cell], invalid: false };
+                selectionIsValid = false;
+                updateSelectionMarks();
+                playSound("block_select_sfx");
+            }
+
+            function onPointerMove(event) {
+                if (!selection || event.pointerId !== selection.pointerId || resolving) return;
+                event.preventDefault();
+                const tile = tileFromPoint(event.clientX, event.clientY);
+                if (!tile) return;
+                extendTrail(readCell(tile));
+                updateSelectionMarks();
+            }
+
+            function onPointerUp(event) {
+                if (!selection || event.pointerId !== selection.pointerId || resolving) return;
+                event.preventDefault();
+                try {
+                    gridContainer.releasePointerCapture(event.pointerId);
+                } catch (error) {
+                    /* Pointer capture may already be released by the browser. */
+                }
+
+                const finalCells = selection.cells.slice();
+                const finalValid = selectionIsValid;
+                if (!finalValid) {
+                    flashInvalidSelection();
+                    return;
+                }
+                clearSelection();
+                executeRound(finalCells);
+            }
+
+            function tileFromPoint(x, y) {
+                const element = document.elementFromPoint(x, y);
+                if (!element) return null;
+                const tile = element.closest(".tile");
+                return tile && gridContainer.contains(tile) ? tile : null;
+            }
+
+            function readCell(tile) {
+                return {
+                    row: Number(tile.dataset.row),
+                    col: Number(tile.dataset.col)
+                };
+            }
+
+            // Free-draw trail selection: the path grows as the pointer passes over
+            // touching (8-way) blocks of the same type. Straight lines, L-shapes and
+            // zig-zags are all valid, as long as every step touches the previous one.
+            function extendTrail(target) {
+                const cells = selection.cells;
+                const last = cells[cells.length - 1];
+                if (target.row === last.row && target.col === last.col) return;
+
+                const firstType = getBlock(cells[0].row, cells[0].col).type;
+                const rowDelta = target.row - last.row;
+                const colDelta = target.col - last.col;
+
+                if (Math.max(Math.abs(rowDelta), Math.abs(colDelta)) === 1) {
+                    tryExtend(target, firstType);
+                    return;
+                }
+
+                // Fast drag along a straight run: walk the gap one cell at a time so no
+                // block is skipped when the finger moves quickly.
+                if (rowDelta === 0 || colDelta === 0 || Math.abs(rowDelta) === Math.abs(colDelta)) {
+                    const stepRow = Math.sign(rowDelta);
+                    const stepCol = Math.sign(colDelta);
+                    const steps = Math.max(Math.abs(rowDelta), Math.abs(colDelta));
+                    for (let i = 1; i <= steps; i++) {
+                        const cell = { row: last.row + stepRow * i, col: last.col + stepCol * i };
+                        if (!tryExtend(cell, firstType)) break;
+                    }
+                }
+            }
+
+            function tryExtend(cell, firstType) {
+                const cells = selection.cells;
+                // Dragging back onto the previous cell undoes the last step.
+                if (cells.length >= 2) {
+                    const prev = cells[cells.length - 2];
+                    if (cell.row === prev.row && cell.col === prev.col) {
+                        cells.pop();
+                        refreshSelectionValidity();
+                        return true;
+                    }
+                }
+                const last = cells[cells.length - 1];
+                if (!areAdjacent(last, cell)) return false;
+                if (cells.some((c) => c.row === cell.row && c.col === cell.col)) return false;
+                const block = getBlock(cell.row, cell.col);
+                if (!block || block.type !== firstType) return false;
+                cells.push(cell);
+                refreshSelectionValidity();
+                return true;
+            }
+
+            function areAdjacent(a, b) {
+                return Math.max(Math.abs(a.row - b.row), Math.abs(a.col - b.col)) === 1;
+            }
+
+            function refreshSelectionValidity() {
+                selection.invalid = false;
+                selectionIsValid = selection.cells.length >= 3;
+            }
+
+            function validateSelection(cells) {
+                if (!Array.isArray(cells) || cells.length < 3) return null;
+                const head = getBlock(cells[0].row, cells[0].col);
+                if (!head) return null;
+                const type = head.type;
+                const seen = new Set();
+                for (let i = 0; i < cells.length; i++) {
+                    const cell = cells[i];
+                    const block = getBlock(cell.row, cell.col);
+                    if (!block || block.type !== type) return null;
+                    const key = `${cell.row},${cell.col}`;
+                    if (seen.has(key)) return null;
+                    seen.add(key);
+                    if (i > 0 && !areAdjacent(cells[i - 1], cell)) return null;
+                }
+                return {
+                    type,
+                    count: cells.length,
+                    direction: directionFromCells(cells)
+                };
+            }
+
+            function directionFromCells(cells) {
+                if (cells.length < 2) return "default";
+                const first = cells[0];
+                const last = cells[cells.length - 1];
+                const rowDelta = last.row - first.row;
+                const colDelta = last.col - first.col;
+                if (rowDelta === 0) return "horizontal";
+                if (colDelta === 0) return "vertical";
+                return Math.sign(rowDelta) === Math.sign(colDelta) ? "diagonal-down" : "diagonal-up";
+            }
+
+            function updateSelectionMarks() {
+                gridContainer.querySelectorAll(".tile").forEach((tile) => {
+                    tile.classList.remove("selected", "invalid");
+                });
+                if (!selection) return;
+                selection.cells.forEach((cell) => {
+                    const tile = findTile(cell.row, cell.col);
+                    if (!tile) return;
+                    tile.classList.add("selected");
+                    if (selection.invalid) tile.classList.add("invalid");
+                });
+            }
+
+            function flashInvalidSelection() {
+                if (selection) {
+                    selection.invalid = true;
+                    updateSelectionMarks();
+                }
+                setMessage("No match — drag through 3+ touching blocks of the same kind.");
+                setTimeout(clearSelection, 260);
+            }
+
+            function clearSelection() {
+                selection = null;
+                selectionIsValid = false;
+                gridContainer.querySelectorAll(".tile").forEach((tile) => {
+                    tile.classList.remove("selected", "invalid");
+                });
+            }
+
+            async function executeRound(cells) {
+                if (resolving || gameOver) return;
+                const playerAction = validateSelection(cells);
+                if (!playerAction) {
+                    flashInvalidSelection();
+                    return;
+                }
+
+                resolving = true;
+                gridContainer.classList.add("locked");
+                setMessage("Round declared.");
+                playSound("block_match_sfx");
+
+                currentRunActions.push(playerAction);
+                const ghostAction = cloneAction(activeGhostActions[ghostActionIndex % activeGhostActions.length] || DEFAULT_GHOST_ACTIONS[0]);
+                ghostActionIndex += 1;
+
+                renderActionCards(playerAction, ghostAction);
+                markRemoving(cells);
+                await sleep(220);
+                removeAndRefill(cells);
+                renderGrid();
+                await sleep(120);
+
+                await resolveCombat(playerAction, ghostAction);
+                roundNumber += 1;
+                renderHud();
+
+                if (await maybeEndGame()) return;
+
+                renderActionCards(null, activeGhostActions[ghostActionIndex % activeGhostActions.length]);
+                setMessage("Drag through 3+ touching blocks of the same kind — any shape works.");
+                gridContainer.classList.remove("locked");
+                resolving = false;
+            }
+
+            async function resolveCombat(playerAction, ghostAction) {
+                clearStatus();
+
+                // 1) Reveal beat: let the player read the matchup before anything fires.
+                revealCards();
+                const youText = `${BLOCK_META[playerAction.type].label} x${playerAction.count}`;
+                const oppText = `${BLOCK_META[ghostAction.type].label} x${ghostAction.count}`;
+                setMessage(opponentIsOfficialGhost
+                    ? `Your echo: ${oppText} — counter it!`
+                    : `You: ${youText}  vs  ${opponentLabel}: ${oppText}`);
+                await sleep(460);
+
+                // 2) Shields rise FIRST, with priority, and stay up through the clash.
+                const playerHasShield = playerAction.type === "shield";
+                const ghostHasShield = ghostAction.type === "shield";
+                let playerShield = null;
+                let ghostShield = null;
+                if (playerHasShield) {
+                    setStatus("player", "shield", "Shield");
+                    playerShield = raiseShield("player");
+                }
+                if (ghostHasShield) {
+                    setStatus("ghost", "shield", "Shield");
+                    ghostShield = raiseShield("ghost");
+                }
+                if (playerHasShield || ghostHasShield) {
+                    setMessage(`${shieldOwners(playerHasShield, ghostHasShield)} raised a shield!`);
+                    await sleep(320);
+                }
+
+                // 3) Resolve flags (combat rules unchanged).
+                const playerBlocked = ghostHasShield && isHostile(playerAction.type);
+                const ghostBlocked = playerHasShield && isHostile(ghostAction.type);
+                const playerCanceled = ghostAction.type === "ice" && !ghostBlocked;
+                const ghostCanceled = playerAction.type === "ice" && !playerBlocked;
+
+                // 4) Frozen feedback BEFORE the cancelled action would have fired.
+                if (playerCanceled) {
+                    setStatus("player", "cancel", "Frozen");
+                    showFrozen("player");
+                    setMessage(`Frozen! Player's ${BLOCK_META[playerAction.type].label} won't go off.`);
+                }
+                if (ghostCanceled) {
+                    setStatus("ghost", "cancel", "Frozen");
+                    showFrozen("ghost");
+                    setMessage(`${opponentLabel} is frozen — ${BLOCK_META[ghostAction.type].label} cancelled.`);
+                }
+                if (playerCanceled || ghostCanceled) await sleep(360);
+
+                // 5) Ice projectiles (shatter the target shield if it blocked the freeze).
+                const iceEffects = [];
+                if (playerAction.type === "ice") iceEffects.push(performIce("player", playerBlocked, "ghost", ghostShield));
+                if (ghostAction.type === "ice") iceEffects.push(performIce("ghost", ghostBlocked, "player", playerShield));
+                await Promise.all(iceEffects);
+
+                // 6) Swords (a blocked strike shatters the shield instead of doing nothing).
+                const swordEffects = [];
+                if (playerAction.type === "sword") swordEffects.push(performSword("player", playerAction, playerCanceled, playerBlocked, ghostShield));
+                if (ghostAction.type === "sword") swordEffects.push(performSword("ghost", ghostAction, ghostCanceled, ghostBlocked, playerShield));
+                await Promise.all(swordEffects);
+
+                // 7) Heals.
+                const healEffects = [];
+                if (playerAction.type === "heart") healEffects.push(performHeal("player", playerAction, playerCanceled));
+                if (ghostAction.type === "heart") healEffects.push(performHeal("ghost", ghostAction, ghostCanceled));
+                await Promise.all(healEffects);
+
+                // 8) Drop any shields that were never struck.
+                await sleep(160);
+                fadeShield(playerShield);
+                fadeShield(ghostShield);
+                clearStatus();
+            }
+
+            function isHostile(type) {
+                return type === "sword" || type === "ice";
+            }
+
+            async function performSword(actor, action, canceled, blocked, targetShield) {
+                const target = actor === "player" ? "ghost" : "player";
+                if (canceled) {
+                    // Frozen: the strike never leaves the hand.
+                    showBurst(actor, "ice");
+                    return sleep(260);
+                }
+                await projectile(actor, target, "sword");
+                if (blocked) {
+                    shatterShield(targetShield);
+                    showBurst(target, "block");
+                    setMessage(`Blocked by ${labelFor(target)}'s Shield!`);
+                    return sleep(340);
+                }
+                const amount = Math.round(actionAmount(action) * Number(settings.damageMultiplier || 1));
+                damage(target, amount, actor);
+                showBurst(target, "hit");
+                floatNumber(target, `-${amount}`, "dmg");
+                shake(target);
+                await sleep(260);
+            }
+
+            async function performIce(actor, blocked, target, targetShield) {
+                await projectile(actor, target, "ice");
+                if (blocked) {
+                    shatterShield(targetShield);
+                    showBurst(target, "block");
+                    setMessage(`Blocked by ${labelFor(target)}'s Shield!`);
+                } else {
+                    showBurst(target, "ice");
+                    playSound("ice_freeze_sfx");
+                }
+                await sleep(240);
+            }
+
+            async function performHeal(actor, action, canceled) {
+                if (canceled) {
+                    showBurst(actor, "ice");
+                    return sleep(260);
+                }
+                const amount = Math.round(actionAmount(action) * Number(settings.healMultiplier || 1));
+                const before = actor === "player" ? player.hp : ghost.hp;
+                heal(actor, amount);
+                const gained = (actor === "player" ? player.hp : ghost.hp) - before;
+                healParticles(actor);
+                pulseHeal(actor);
+                playSound("heal_sfx");
+                if (gained > 0) {
+                    floatNumber(actor, `+${gained}`, "heal");
+                } else {
+                    setMessage(`${labelFor(actor)}: HP already full.`);
+                }
+                await sleep(620);
+            }
+
+            function actionAmount(action) {
+                return 15 + (action.count - 3) * 5;
+            }
+
+            function damage(target, amount, actor) {
+                if (target === "player") {
+                    player.hp = Math.max(0, player.hp - amount);
+                } else {
+                    ghost.hp = Math.max(0, ghost.hp - amount);
+                }
+                if (actor === "player") damageDealt += amount;
+                renderHud();
+            }
+
+            function heal(actor, amount) {
+                if (actor === "player") {
+                    player.hp = Math.min(player.maxHp, player.hp + amount);
+                    healingDone += amount;
+                } else {
+                    ghost.hp = Math.min(ghost.maxHp, ghost.hp + amount);
+                }
+                renderHud();
+            }
+
+            async function maybeEndGame() {
+                if (player.hp <= 0) {
+                    await endGame(false);
+                    return true;
+                }
+                if (ghost.hp <= 0) {
+                    await endGame(true);
+                    return true;
+                }
+                return false;
+            }
+
+            async function endGame(victory) {
+                gameOver = true;
+                resolving = true;
+                gridContainer.classList.add("locked");
+                const defeatByGhost = !victory && opponentIsOfficialGhost;
+                if (victory) {
+                    if (startedWithoutOfficialGhost) {
+                        setMessage("Your soul tears free — your ghost is forming.");
+                        await soulExtraction();
+                    }
+                    await saveOfficialGhost();
+                    playSound("victory_sfx");
+                } else {
+                    await clearSavedGhost();
+                    playSound("defeat_sfx");
+                }
+
+                gameOverTitle.textContent = victory ? "Victory" : (defeatByGhost ? "Beaten by Your Ghost" : "Defeat");
+                gameOverTitle.className = victory ? "victory" : "defeat";
+                let outcomeLine;
+                if (victory) {
+                    outcomeLine = startedWithoutOfficialGhost
+                        ? "Your run is now the ghost — next time you fight yourself."
+                        : "You outplayed your ghost. This run becomes the new ghost.";
+                } else if (defeatByGhost) {
+                    outcomeLine = "You lost to your own ghost. The history is wiped — you start from nothing.";
+                } else {
+                    outcomeLine = "The wild wraith won. No ghost forms — next run starts fresh.";
+                }
+                gameOverStats.innerHTML = [
+                    `<div>Rounds: ${Math.max(1, roundNumber)}</div>`,
+                    `<div>Damage Dealt: ${damageDealt}</div>`,
+                    `<div>Healing Done: ${healingDone}</div>`,
+                    `<div>${outcomeLine}</div>`
+                ].join("");
+                gameOverScreen.classList.add("visible");
+            }
+
+            async function saveOfficialGhost() {
+                // Commit the completed run as the ghost the player will face next time.
+                await saveState({
+                    version: 2,
+                    ghostActions: currentRunActions.map(cloneAction),
+                    hasOfficialGhost: currentRunActions.length > 0
+                });
+            }
+
+            async function clearSavedGhost() {
+                // On defeat the history resets: next run starts fresh vs the wild wraith.
+                await saveState({
+                    version: 2,
+                    ghostActions: [],
+                    hasOfficialGhost: false
+                });
+            }
+
+            async function saveState(state) {
+                try {
+                    if (window.lib && typeof lib.saveUserGameState === "function") {
+                        await lib.saveUserGameState(state);
+                    }
+                } catch (error) {
+                    logError("saveUserGameState failed", error);
+                }
+            }
+
+            function createPlayableGrid() {
+                let candidate = [];
+                for (let attempt = 0; attempt < 60; attempt++) {
+                    candidate = [];
+                    for (let row = 0; row < gridSize; row++) {
+                        candidate[row] = [];
+                        for (let col = 0; col < gridSize; col++) {
+                            candidate[row][col] = createBlock();
+                        }
+                    }
+                    if (hasEasyLine(candidate)) return candidate;
+                }
+                plantLine(candidate);
+                return candidate;
+            }
+
+            function createBlock(forcedType) {
+                return {
+                    id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`,
+                    type: forcedType || randomBlockType()
+                };
+            }
+
+            function randomBlockType() {
+                const dist = settings.blockDistribution || DEFAULT_SETTINGS.blockDistribution;
+                const total = BLOCK_TYPES.reduce((sum, type) => sum + Math.max(0, Number(dist[type]) || 0), 0) || 1;
+                let cursor = Math.random() * total;
+                for (const type of BLOCK_TYPES) {
+                    cursor -= Math.max(0, Number(dist[type]) || 0);
+                    if (cursor <= 0) return type;
+                }
+                return "sword";
+            }
+
+            // A straight horizontal or vertical run of 3+ is easy to drag on touch.
+            // The grid guarantees one of these so the board never feels stuck even when
+            // the only remaining match would otherwise be an awkward diagonal.
+            function hasEasyLine(sourceGrid) {
+                return hasAvailableLine(sourceGrid, [
+                    { row: 0, col: 1 },
+                    { row: 1, col: 0 }
+                ]);
+            }
+
+            function hasAvailableLine(sourceGrid, directions) {
+                directions = directions || [
+                    { row: 0, col: 1 },
+                    { row: 1, col: 0 },
+                    { row: 1, col: 1 },
+                    { row: 1, col: -1 }
+                ];
+                for (let row = 0; row < gridSize; row++) {
+                    for (let col = 0; col < gridSize; col++) {
+                        const type = sourceGrid[row][col].type;
+                        for (const direction of directions) {
+                            let count = 1;
+                            for (let step = 1; step < 3; step++) {
+                                const nextRow = row + direction.row * step;
+                                const nextCol = col + direction.col * step;
+                                if (!inBounds(nextRow, nextCol) || sourceGrid[nextRow][nextCol].type !== type) break;
+                                count += 1;
+                            }
+                            if (count >= 3) return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
+            function plantLine(sourceGrid) {
+                const row = Math.min(1, gridSize - 1);
+                const type = randomBlockType();
+                for (let col = 0; col < Math.min(3, gridSize); col++) {
+                    sourceGrid[row][col] = createBlock(type);
+                }
+            }
+
+            function removeAndRefill(cells) {
+                cells.forEach((cell) => {
+                    if (inBounds(cell.row, cell.col)) grid[cell.row][cell.col] = null;
+                });
+
+                for (let col = 0; col < gridSize; col++) {
+                    const survivors = [];
+                    for (let row = gridSize - 1; row >= 0; row--) {
+                        if (grid[row][col]) survivors.push(grid[row][col]);
+                    }
+                    for (let row = gridSize - 1; row >= 0; row--) {
+                        grid[row][col] = survivors.length ? survivors.shift() : createBlock();
+                    }
+                }
+
+                if (!hasEasyLine(grid)) {
+                    plantLine(grid);
+                }
+            }
+
+            function renderAll() {
+                renderHud();
+                renderGrid();
+                renderActionCards(null, activeGhostActions[ghostActionIndex % activeGhostActions.length]);
+            }
+
+            function renderHud() {
+                playerHpText.textContent = `${player.hp} / ${player.maxHp}`;
+                ghostHpText.textContent = `${ghost.hp} / ${ghost.maxHp}`;
+                playerHpBar.style.width = `${Math.max(0, player.hp / player.maxHp * 100)}%`;
+                ghostHpBar.style.width = `${Math.max(0, ghost.hp / ghost.maxHp * 100)}%`;
+                roundCounter.textContent = `Round ${roundNumber}`;
+            }
+
+            function renderGrid() {
+                gridContainer.innerHTML = "";
+                for (let row = 0; row < gridSize; row++) {
+                    for (let col = 0; col < gridSize; col++) {
+                        const block = grid[row][col];
+                        const tile = document.createElement("button");
+                        tile.type = "button";
+                        tile.className = `tile ${block.type}`;
+                        tile.dataset.row = String(row);
+                        tile.dataset.col = String(col);
+                        tile.dataset.type = block.type;
+                        tile.setAttribute("aria-label", `${BLOCK_META[block.type].label} block row ${row + 1} column ${col + 1}`);
+
+                        const imageUrl = assetUrls[`block_${block.type}`];
+                        if (imageUrl) {
+                            const img = document.createElement("img");
+                            img.alt = BLOCK_META[block.type].label;
+                            img.src = imageUrl;
+                            img.onerror = () => {
+                                img.remove();
+                                tile.appendChild(fallbackLabel(block.type));
+                            };
+                            tile.appendChild(img);
+                        } else {
+                            tile.appendChild(fallbackLabel(block.type));
+                        }
+                        gridContainer.appendChild(tile);
+                    }
+                }
+            }
+
+            function fallbackLabel(type) {
+                const span = document.createElement("span");
+                span.className = "tile-fallback";
+                span.textContent = BLOCK_META[type].short;
+                return span;
+            }
+
+            function renderActionCards(playerAction, ghostAction) {
+                playerActionCard.innerHTML = actionCardHtml("Player", playerAction);
+                ghostActionCard.innerHTML = actionCardHtml(opponentLabel, ghostAction);
+            }
+
+            function revealCards() {
+                [playerActionCard, ghostActionCard].forEach((card) => {
+                    card.classList.remove("reveal");
+                    void card.offsetWidth;
+                    card.classList.add("reveal");
+                    setTimeout(() => card.classList.remove("reveal"), 480);
+                });
+            }
+
+            function labelFor(side) {
+                return side === "player" ? "Player" : opponentLabel;
+            }
+
+            function shieldOwners(playerHas, ghostHas) {
+                if (playerHas && ghostHas) return "Both fighters";
+                return playerHas ? "Player" : opponentLabel;
+            }
+
+            function actionCardHtml(label, action) {
+                if (!action) return `${label}: waiting`;
+                const imageUrl = assetUrls[`block_${action.type}`];
+                const image = imageUrl ? `<img src="${escapeAttr(imageUrl)}" alt="">` : "";
+                return `${image}<span>${label}: ${BLOCK_META[action.type].label} x${action.count}</span>`;
+            }
+
+            function setStatus(target, kind, text) {
+                const container = target === "player" ? playerStatus : ghostStatus;
+                const chip = document.createElement("div");
+                chip.className = `status-chip ${kind}`;
+                chip.textContent = text;
+                container.appendChild(chip);
+            }
+
+            function clearStatus() {
+                playerStatus.innerHTML = "";
+                ghostStatus.innerHTML = "";
+            }
+
+            function markRemoving(cells) {
+                cells.forEach((cell) => {
+                    const tile = findTile(cell.row, cell.col);
+                    if (tile) tile.classList.add("removing");
+                });
+            }
+
+            function findTile(row, col) {
+                return gridContainer.querySelector(`.tile[data-row="${row}"][data-col="${col}"]`);
+            }
+
+            function getBlock(row, col) {
+                return inBounds(row, col) ? grid[row][col] : null;
+            }
+
+            function inBounds(row, col) {
+                return row >= 0 && row < gridSize && col >= 0 && col < gridSize;
+            }
+
+            function projectile(actor, target, type) {
+                const from = centerOf(combatElement(actor));
+                const to = centerOf(combatElement(target));
+
+                // Muzzle flash at the attacker so the shot clearly reads as "fired".
+                const flash = document.createElement("div");
+                flash.className = `effect-burst ${type === "ice" ? "ice" : "hit"}`;
+                flash.style.left = `${from.x}px`;
+                flash.style.top = `${from.y}px`;
+                effectLayer.appendChild(flash);
+                setTimeout(() => flash.remove(), 480);
+                if (type !== "ice") playSound("sword_attack_sfx");
+
+                const projectileEl = document.createElement("div");
+                projectileEl.className = `effect-projectile ${type === "ice" ? "ice" : "sword"}`;
+                projectileEl.style.transform = `translate(${from.x}px, ${from.y}px) translate(-50%, -50%)`;
+                effectLayer.appendChild(projectileEl);
+
+                requestAnimationFrame(() => {
+                    projectileEl.style.transform = `translate(${to.x}px, ${to.y}px) translate(-50%, -50%)`;
+                });
+
+                return sleep(430).then(() => {
+                    projectileEl.remove();
+                });
+            }
+
+            function raiseShield(target) {
+                playSound("shield_sfx");
+                const center = centerOf(combatElement(target));
+                const shield = document.createElement("div");
+                shield.className = "effect-shield held";
+                shield.style.left = `${center.x}px`;
+                shield.style.top = `${center.y}px`;
+                effectLayer.appendChild(shield);
+                return shield;
+            }
+
+            function shatterShield(shield) {
+                if (!shield) return;
+                shield.classList.remove("held");
+                shield.classList.add("shield-shatter");
+                setTimeout(() => shield.remove(), 440);
+            }
+
+            function fadeShield(shield) {
+                if (!shield) return;
+                shield.classList.remove("held");
+                shield.style.transition = "opacity 280ms ease";
+                shield.style.opacity = "0";
+                setTimeout(() => shield.remove(), 300);
+            }
+
+            function showBurst(target, kind) {
+                const center = centerOf(combatElement(target));
+                const burst = document.createElement("div");
+                burst.className = `effect-burst ${kind}`;
+                burst.style.left = `${center.x}px`;
+                burst.style.top = `${center.y}px`;
+                effectLayer.appendChild(burst);
+                setTimeout(() => burst.remove(), 560);
+            }
+
+            function healParticles(target) {
+                const center = centerOf(combatElement(target));
+                for (let i = 0; i < 10; i++) {
+                    const particle = document.createElement("div");
+                    particle.className = "effect-heal";
+                    particle.style.left = `${center.x + (Math.random() - 0.5) * 62}px`;
+                    particle.style.top = `${center.y + (Math.random() - 0.5) * 42}px`;
+                    particle.style.setProperty("--heal-x", `${(Math.random() - 0.5) * 90}px`);
+                    effectLayer.appendChild(particle);
+                    setTimeout(() => particle.remove(), 960);
+                }
+            }
+
+            function showFrozen(target) {
+                const el = combatElement(target);
+                el.classList.remove("frozen");
+                void el.offsetWidth;
+                el.classList.add("frozen");
+                setTimeout(() => el.classList.remove("frozen"), 650);
+            }
+
+            function floatNumber(target, text, kind) {
+                const center = centerOf(combatElement(target));
+                const node = document.createElement("div");
+                node.className = `float-text ${kind}`;
+                node.textContent = text;
+                node.style.left = `${center.x}px`;
+                node.style.top = `${center.y - 30}px`;
+                effectLayer.appendChild(node);
+                setTimeout(() => node.remove(), 1020);
+            }
+
+            async function soulExtraction() {
+                const from = centerOf(combatElement("player"));
+                const to = centerOf(combatElement("ghost"));
+                const souls = [];
+                for (let i = 0; i < 18; i++) {
+                    const soul = document.createElement("div");
+                    soul.className = "soul";
+                    soul.style.left = `${from.x + (Math.random() - 0.5) * 46}px`;
+                    soul.style.top = `${from.y + (Math.random() - 0.5) * 54}px`;
+                    soul.style.setProperty("--soul-x", `${to.x - from.x + (Math.random() - 0.5) * 90}px`);
+                    soul.style.setProperty("--soul-y", `${to.y - from.y - 30 + (Math.random() - 0.5) * 80}px`);
+                    soul.style.animationDelay = `${i * 45}ms`;
+                    effectLayer.appendChild(soul);
+                    souls.push(soul);
+                }
+                await sleep(1500);
+                souls.forEach((soul) => soul.remove());
+
+                const form = document.createElement("div");
+                form.className = "ghost-form";
+                form.style.left = `${to.x}px`;
+                form.style.top = `${to.y}px`;
+                effectLayer.appendChild(form);
+                await sleep(1200);
+                form.remove();
+            }
+
+            function combatElement(target) {
+                return target === "player" ? playerCombatant : ghostCombatant;
+            }
+
+            function centerOf(element) {
+                const worldRect = world.getBoundingClientRect();
+                const rect = element.getBoundingClientRect();
+                return {
+                    x: rect.left - worldRect.left + rect.width / 2,
+                    y: rect.top - worldRect.top + rect.height / 2
+                };
+            }
+
+            function shake(target) {
+                const img = target === "player" ? playerImg : ghostImg;
+                if (img.hidden) return;
+                img.classList.remove("hit-shake");
+                void img.offsetWidth;
+                img.classList.add("hit-shake");
+            }
+
+            function pulseHeal(target) {
+                const img = target === "player" ? playerImg : ghostImg;
+                if (img.hidden) return;
+                img.classList.remove("heal-pulse");
+                void img.offsetWidth;
+                img.classList.add("heal-pulse");
+            }
+
+            function playSound(id) {
+                const url = assetUrls[id];
+                if (!url) return;
+                try {
+                    const audio = new Audio(url);
+                    audio.volume = 0.35;
+                    audio.play().catch(() => {});
+                } catch (error) {
+                    logError("sound failed", error);
+                }
+            }
+
+            function setMessage(text) {
+                roundStatus.textContent = text;
+            }
+
+            function cloneAction(action) {
+                return {
+                    type: action.type,
+                    count: action.count,
+                    direction: action.direction || "default"
+                };
+            }
+
+            function clamp(value, min, max) {
+                return Math.max(min, Math.min(max, value));
+            }
+
+            function escapeAttr(value) {
+                return String(value).replace(/"/g, "&quot;");
+            }
+
+            function sleep(ms) {
+                return new Promise((resolve) => setTimeout(resolve, ms));
+            }
+
+            function logError(message, error) {
+                try {
+                    if (window.lib && typeof lib.log === "function") {
+                        lib.log(`${message}: ${error && error.message ? error.message : error}`);
+                    } else {
+                        console.warn(message, error);
+                    }
+                } catch (logFailure) {
+                    console.warn(message, error);
+                }
+            }
+        }
+
+        if (!window.lib || location.hostname === "127.0.0.1" || location.hostname === "localhost" || location.protocol === "file:") {
+            installLocalAstrocadeFallback();
+            setTimeout(() => {
+                run(window.mode || "play");
+            }, 0);
+        }
+    </script>
+</body>
+</html>

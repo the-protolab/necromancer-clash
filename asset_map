@@ -1,0 +1,100 @@
+// Asset Map (Read-Only)
+// Edit assets in the Media tab.
+// Use these IDs alongside lib to reference assets in your code:
+//
+// Example: lib.getAsset["player_sprite"]
+
+const assets = {
+  "necromancer_ghost": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/images/necromancer_ghost_0abe6c7b-7b26-4d63-89ea-1c8b0a107fd1.webp",
+    "type": "image",
+    "aspect_ratio": [
+      764,
+      1245
+    ]
+  },
+  "battlefield_background": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/images/battlefield_background_604ae7d3-bf7d-47e6-a644-cebbe40d0235.webp",
+    "type": "image",
+    "aspect_ratio": [
+      1536,
+      1024
+    ]
+  },
+  "block_sword": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/images/block_sword_23711470-7f45-4bd0-b9f5-364ed7588779.webp",
+    "type": "image",
+    "aspect_ratio": [
+      904,
+      880
+    ]
+  },
+  "block_heart": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/images/block_heart_4ae14b13-073e-4ab2-86f5-734c9238803b.webp",
+    "type": "image",
+    "aspect_ratio": [
+      853,
+      840
+    ]
+  },
+  "block_shield": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/images/block_shield_61ad6e50-e1e8-4fce-8cc9-36bf8d916761.webp",
+    "type": "image",
+    "aspect_ratio": [
+      854,
+      839
+    ]
+  },
+  "block_ice": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/images/block_ice_132888fd-5f19-44c3-bc71-53b4443ed1ae.webp",
+    "type": "image",
+    "aspect_ratio": [
+      964,
+      955
+    ]
+  },
+  "battle_music": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/battle_music_2692484c-0a49-41cc-9b90-c39cec408af0.mp3",
+    "type": "audio"
+  },
+  "sword_attack_sfx": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/sword_attack_sfx_ce773fbf-1143-47d3-8fba-502203930999.mp3",
+    "type": "audio"
+  },
+  "heal_sfx": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/heal_sfx_d93650fd-2951-4457-908b-b9d9e8419ea3.mp3",
+    "type": "audio"
+  },
+  "shield_sfx": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/shield_sfx_1a25d87b-de73-4c46-ac8a-08cebfb837cf.mp3",
+    "type": "audio"
+  },
+  "ice_freeze_sfx": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/ice_freeze_sfx_fd511a28-f2bd-44c6-aa32-d47e78bf33d2.mp3",
+    "type": "audio"
+  },
+  "block_select_sfx": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/block_select_sfx_ac087039-02ba-4472-9b65-67de8ea0a45c.mp3",
+    "type": "audio"
+  },
+  "block_match_sfx": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/block_match_sfx_cd1722f8-40ea-4901-a581-0915b1700991.mp3",
+    "type": "audio"
+  },
+  "victory_sfx": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/victory_sfx_4012d81c-3ad4-4f0d-9e47-e49d6e5f8580.mp3",
+    "type": "audio"
+  },
+  "defeat_sfx": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/defeat_sfx_e5bcc56f-111e-42fe-82ad-02811585c76b.mp3",
+    "type": "audio"
+  },
+  "necromancer_player": {
+    "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782555395927_01KW499HTQFYK8MBGBCQCXAGJ2.necromancer_player.png",
+    "type": "image",
+    "aspect_ratio": [
+      1024,
+      1024
+    ]
+  }
+};

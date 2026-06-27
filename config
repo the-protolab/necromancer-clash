@@ -1,0 +1,14 @@
+{
+  "settings": {
+    "startingHP": 40,
+    "damageMultiplier": 1,
+    "healMultiplier": 1,
+    "gridSize": 6,
+    "blockDistribution": {
+      "sword": 25,
+      "heart": 25,
+      "shield": 25,
+      "ice": 25
+    }
+  }
+}
