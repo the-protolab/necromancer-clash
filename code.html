@@ -249,6 +249,8 @@
             background-repeat: no-repeat;
             background-position: center;
             background-size: contain;
+            /* Plain icon by default (the Wild Wraith in run 1): just a legibility shadow,
+               native block colors, no spectral treatment. */
             filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.55));
             pointer-events: none;
         }
@@ -257,10 +259,21 @@
             display: none;
         }
 
-        /* A light beam that sweeps across the icon every 4s. The gradient slides via
-           background-position (mask stays put), and the mask is the icon itself, so the
-           shine only runs over the sprite shape — never the transparent box. */
-        .ghost-move-hint::after {
+        /* Ghost-only spectral treatment (your own ghost's replay): strip the block's
+           native color, re-tint to spectral blue, add a cyan aura, and fade slightly.
+           The Wild Wraith keeps the plain icon above. */
+        #game-world.official-ghost .ghost-move-hint {
+            filter:
+                grayscale(1) sepia(1) hue-rotate(168deg) saturate(4.5) brightness(1.05)
+                drop-shadow(0 0 6px rgba(120, 220, 255, 0.95))
+                drop-shadow(0 0 13px rgba(120, 220, 255, 0.6));
+            opacity: 0.8;
+        }
+
+        /* A light beam that sweeps across the icon every 4s (ghost only). The gradient
+           slides via background-position (mask stays put), and the mask is the icon
+           itself, so the shine only runs over the sprite shape — never the transparent box. */
+        #game-world.official-ghost .ghost-move-hint::after {
             content: "";
             position: absolute;
             inset: 0;
@@ -1750,11 +1763,11 @@
                     opponentIsOfficialGhost = true;
                     setMessage("You face your own ghost — your last run repeats, move for move.");
                 } else {
-                    // No history yet: a wild creature attacks, following the ritual pattern.
+                    // No history yet: a dormant statue awakens, following the ritual pattern.
                     activeGhostActions = DEFAULT_GHOST_ACTIONS.slice();
-                    opponentLabel = "Wild Wraith";
+                    opponentLabel = "Slumbering Statue";
                     opponentIsOfficialGhost = false;
-                    setMessage("First run: a wild wraith attacks. Beat it to forge your ghost.");
+                    setMessage(`First run: the ${opponentLabel} awakens and attacks. Beat it to forge your ghost.`);
                 }
             }
 
@@ -2415,7 +2428,7 @@
                 } else if (defeatByGhost) {
                     outcomeLine = "You lost to your own ghost. The history is wiped — you start from nothing.";
                 } else {
-                    outcomeLine = "The wild wraith won. No ghost forms — next run starts fresh.";
+                    outcomeLine = `The ${opponentLabel} won. No ghost forms — next run starts fresh.`;
                 }
 
                 if (victory) {
@@ -2642,7 +2655,7 @@
                 const round = (step % total) + 1;
                 return opponentIsOfficialGhost
                     ? `Ghost recreating your last run, round ${round}/${total}`
-                    : `Wild Wraith attacks, round ${round}/${total}`;
+                    : `${opponentLabel} attacks, round ${round}/${total}`;
             }
 
             function revealTurnStatus() {
