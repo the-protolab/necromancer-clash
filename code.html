@@ -41,6 +41,9 @@
             --battle-height: 42dvh;
             --gold: #d9b85c;
             --tile-gap: 6px;
+            /* Shared board width: the grid AND the turn-status line use this so the
+               text's left edge lines up exactly with the (centered) grid's left edge. */
+            --board-w: min(92vw, max(250px, calc(100dvh - var(--battle-height) - 88px)), 520px);
             position: relative;
             display: grid;
             grid-template-rows: minmax(230px, var(--battle-height)) minmax(0, 1fr);
@@ -100,6 +103,17 @@
             font-size: 18px;
             line-height: 1.2;
             text-align: right;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+        }
+
+        /* Round indicator, moved here to the top-left of the battlefield. */
+        .round-banner {
+            align-self: start;
+            justify-self: start;
+            color: #d8cda8;
+            font-size: 18px;
+            line-height: 1.2;
+            white-space: nowrap;
             text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
         }
 
@@ -379,43 +393,21 @@
             to { background-position: var(--pattern-tile-w) calc(var(--pattern-tile-w) * 0.469211); }
         }
 
-        .action-strip {
-            display: grid;
-            grid-template-columns: minmax(90px, 1fr) auto minmax(90px, 1fr);
-            align-items: center;
-            gap: 10px;
-            width: min(900px, 100%);
+        /* Single turn indicator above the grid. Same width as the board and centered,
+           so with text-align:left its text starts exactly at the grid's left edge. */
+        .turn-status {
+            width: var(--board-w);
+            max-width: 100%;
             margin: 0 auto 7px;
-        }
-
-        .action-card {
             min-height: 34px;
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 0 4px;
-            border: 0;
-            border-radius: 0;
-            background: transparent;
             color: #f5e9c8;
-            font-size: 16px;
-            text-align: center;
+            font-size: 19px;
+            text-align: left;
             text-shadow: 0 2px 8px rgba(0, 0, 0, 0.88);
         }
 
-        .action-card img {
-            width: 24px;
-            height: 24px;
-            object-fit: contain;
-        }
-
-        .round-counter {
-            min-width: 92px;
-            color: #d8cda8;
-            font-size: 16px;
-            text-align: center;
-        }
 
         #grid-shell {
             min-height: 0;
@@ -429,7 +421,7 @@
             grid-template-columns: repeat(var(--grid-size), minmax(0, 1fr));
             grid-template-rows: repeat(var(--grid-size), minmax(0, 1fr));
             gap: var(--tile-gap);
-            width: min(92vw, max(250px, calc(100dvh - var(--battle-height) - 88px)), 520px);
+            width: var(--board-w);
             max-width: 100%;
             aspect-ratio: 1 / 1;
             padding: 8px;
@@ -944,8 +936,9 @@
             }
         }
 
-        .action-card.reveal {
+        .turn-status.reveal {
             animation: cardPop 450ms ease;
+            transform-origin: left center; /* grow from the left edge so it stays aligned */
         }
 
         @keyframes cardPop {
@@ -1000,6 +993,7 @@
             #game-world {
                 --battle-height: 39dvh;
                 --tile-gap: 4px;
+                --board-w: min(94vw, max(238px, calc(100dvh - var(--battle-height) - 76px)), 760px);
                 grid-template-rows: minmax(206px, var(--battle-height)) minmax(0, 1fr);
             }
 
@@ -1054,33 +1048,12 @@
                 padding: 6px 8px 8px;
             }
 
-            .action-strip {
-                gap: 5px;
-                margin-bottom: 5px;
-            }
-
-            .action-card {
-                min-height: 28px;
-                padding: 4px 5px;
-                font-size: 14px;
-            }
-
-            .action-card img {
-                width: 20px;
-                height: 20px;
-            }
-
-            .round-counter,
             .hint-bar {
                 font-size: 14px;
             }
 
-            .round-counter {
-                min-width: 58px;
-            }
-
             #grid-container {
-                width: min(94vw, max(238px, calc(100dvh - var(--battle-height) - 76px)), 760px);
+                width: var(--board-w);
                 padding: 5px;
             }
         }
@@ -1105,6 +1078,14 @@
 
             .name-row {
                 font-size: 20px;
+            }
+
+            .round-banner {
+                font-size: 22px;
+            }
+
+            .turn-status {
+                font-size: 23px;
             }
 
             .hp-track {
@@ -1156,7 +1137,9 @@
     <div id="game-world">
         <section id="battlefield">
             <div class="battle-top">
-                <!-- Game title removed; #round-status kept (empty by default) for combat narration. -->
+                <!-- Game title removed. Round indicator lives here (top-left); #round-status
+                     kept (empty by default) for combat narration on the right. -->
+                <div class="round-banner" id="round-counter">Round 1</div>
                 <div id="round-status"></div>
             </div>
 
@@ -1200,11 +1183,7 @@
         </section>
 
         <section id="grid-zone">
-            <div class="action-strip">
-                <div class="action-card" id="player-action-card">Player: waiting</div>
-                <div class="round-counter" id="round-counter">Round 1</div>
-                <div class="action-card" id="ghost-action-card">Opponent: queued</div>
-            </div>
+            <div class="turn-status" id="turn-status">Player turn: waiting</div>
             <div id="grid-shell">
                 <div id="grid-container" aria-label="Match grid"></div>
             </div>
@@ -1280,59 +1259,6 @@
             if (window.__necromancersClashStarted) return;
             window.__necromancersClashStarted = true;
             installLocalAstrocadeFallback();
-
-            // ===== TEMP DEBUG PROBE — remove after diagnosing platform sizing =====
-            // Shows on-screen whether 100dvh diverges from 100% inside the iframe.
-            // If gameH < bodyH on the platform, the dvh-based layout is the culprit.
-            (function viewportProbe() {
-                const probe = document.createElement("div");
-                probe.style.cssText =
-                    "position:fixed;top:0;left:0;z-index:999999;background:rgba(0,0,0,.85);" +
-                    "color:#7CFC00;font:11px/1.4 monospace;padding:5px 7px;white-space:pre;" +
-                    "pointer-events:none;border-bottom-right-radius:6px;max-width:100%";
-                // A throwaway element measured in dvh, to read what 100dvh actually resolves to.
-                const dvhMeter = document.createElement("div");
-                dvhMeter.style.cssText = "position:fixed;top:0;left:0;height:100dvh;width:0;pointer-events:none;visibility:hidden";
-                document.body.appendChild(dvhMeter);
-                function fmt(n) { return Math.round(n); }
-                function box(el) { return el ? fmt(el.clientWidth) + "x" + fmt(el.clientHeight) : "?"; }
-                function rendered(img) {
-                    // Visible bitmap size after object-fit:contain inside its element box.
-                    if (!img || !img.naturalWidth) return "?";
-                    const bw = img.clientWidth, bh = img.clientHeight;
-                    const ar = img.naturalWidth / img.naturalHeight;
-                    let w = bw, h = bw / ar;
-                    if (h > bh) { h = bh; w = bh * ar; }
-                    return fmt(w) + "x" + fmt(h);
-                }
-                function update() {
-                    const gw = document.getElementById("game-world");
-                    const pImg = document.getElementById("player-img");
-                    const wrap = pImg ? pImg.closest(".character-wrap") : null;
-                    const vs = document.querySelector(".versus");
-                    const mq = window.matchMedia("(min-width: 600px) and (orientation: portrait)").matches;
-                    probe.textContent =
-                        "viewport " + fmt(window.innerWidth) + "x" + fmt(window.innerHeight) +
-                        "  mq(>=600&portrait)=" + mq + "\n" +
-                        "game-worldH=" + (gw ? fmt(gw.clientHeight) : "?") +
-                        "  body=" + fmt(document.body.clientHeight) + "\n" +
-                        "char-wrap=" + box(wrap) + "  img-box=" + box(pImg) + "\n" +
-                        "img-NATURAL=" + (pImg && pImg.naturalWidth ? pImg.naturalWidth + "x" + pImg.naturalHeight : "?") +
-                        "\nimg-VISIBLE=" + rendered(pImg) + "  versus=" + box(vs);
-                    if (typeof lib !== "undefined" && lib.log) {
-                        lib.log("[probe] " + probe.textContent.replace(/\n/g, " | "));
-                    }
-                }
-                document.body.appendChild(probe);
-                update();
-                window.addEventListener("resize", update);
-                setTimeout(update, 500);
-                setTimeout(update, 1500);
-                setTimeout(update, 3000);
-                const pImgEl = document.getElementById("player-img");
-                if (pImgEl) pImgEl.addEventListener("load", update);
-            })();
-            // ===== END TEMP DEBUG PROBE =====
 
             const BLOCK_TYPES = ["sword", "heart", "shield", "ice"];
             const BLOCK_META = {
@@ -1415,8 +1341,7 @@
             const gridContainer = document.getElementById("grid-container");
             const roundStatus = document.getElementById("round-status");
             const hintBar = document.getElementById("hint-bar");
-            const playerActionCard = document.getElementById("player-action-card");
-            const ghostActionCard = document.getElementById("ghost-action-card");
+            const turnStatus = document.getElementById("turn-status");
             const vsPlayerCallout = document.getElementById("vs-player-callout");
             const vsGhostCallout = document.getElementById("vs-ghost-callout");
             const roundCounter = document.getElementById("round-counter");
@@ -2198,10 +2123,11 @@
                 playSound("block_match_sfx");
 
                 currentRunActions.push(playerAction);
-                const ghostAction = cloneAction(activeGhostActions[ghostActionIndex % activeGhostActions.length] || DEFAULT_GHOST_ACTIONS[0]);
+                const ghostStep = ghostActionIndex % activeGhostActions.length;
+                const ghostAction = cloneAction(activeGhostActions[ghostStep] || DEFAULT_GHOST_ACTIONS[0]);
                 ghostActionIndex += 1;
 
-                renderActionCards(playerAction, ghostAction);
+                setTurnStatus(ghostTurnText(ghostStep));
                 // You just finished tracing -> pop your move callout above the VS bubble.
                 showVsCallout(vsPlayerCallout, playerAction);
                 markRemoving(cells);
@@ -2229,7 +2155,7 @@
 
                 if (await maybeEndGame()) return;
 
-                renderActionCards(null, activeGhostActions[ghostActionIndex % activeGhostActions.length]);
+                setTurnStatus("Player turn: waiting");
                 setMessage(""); // clear the top between rounds (no instruction text)
                 gridContainer.classList.remove("locked");
                 resolving = false;
@@ -2239,7 +2165,7 @@
                 clearStatus();
 
                 // 1) Reveal beat: let the player read the matchup before anything fires.
-                revealCards();
+                revealTurnStatus();
                 const youText = `${BLOCK_META[playerAction.type].label} x${playerAction.count}`;
                 const oppText = `${BLOCK_META[ghostAction.type].label} x${ghostAction.count}`;
                 setMessage(opponentIsOfficialGhost
@@ -2582,7 +2508,7 @@
             function renderAll() {
                 renderHud();
                 renderGrid();
-                renderActionCards(null, activeGhostActions[ghostActionIndex % activeGhostActions.length]);
+                setTurnStatus("Player turn: waiting");
             }
 
             function renderHud() {
@@ -2631,18 +2557,25 @@
                 return span;
             }
 
-            function renderActionCards(playerAction, ghostAction) {
-                playerActionCard.innerHTML = actionCardHtml("Player", playerAction);
-                ghostActionCard.innerHTML = actionCardHtml(opponentLabel, ghostAction);
+            function setTurnStatus(text) {
+                turnStatus.textContent = text;
             }
 
-            function revealCards() {
-                [playerActionCard, ghostActionCard].forEach((card) => {
-                    card.classList.remove("reveal");
-                    void card.offsetWidth;
-                    card.classList.add("reveal");
-                    setTimeout(() => card.classList.remove("reveal"), 480);
-                });
+            // Text shown while the opponent takes its turn. The official ghost is an exact
+            // replay of your last run; the wild wraith follows the fixed ritual pattern.
+            function ghostTurnText(step) {
+                const total = activeGhostActions.length || DEFAULT_GHOST_ACTIONS.length;
+                const round = (step % total) + 1;
+                return opponentIsOfficialGhost
+                    ? `Ghost recreating your last run, round ${round}/${total}`
+                    : `Wild Wraith attacks, round ${round}/${total}`;
+            }
+
+            function revealTurnStatus() {
+                turnStatus.classList.remove("reveal");
+                void turnStatus.offsetWidth;
+                turnStatus.classList.add("reveal");
+                setTimeout(() => turnStatus.classList.remove("reveal"), 480);
             }
 
             // VS callouts: pop a side's move ("ICE ×4") in/out with a jelly-jump animation.
@@ -2671,13 +2604,6 @@
             function shieldOwners(playerHas, ghostHas) {
                 if (playerHas && ghostHas) return "Both fighters";
                 return playerHas ? "Player" : opponentLabel;
-            }
-
-            function actionCardHtml(label, action) {
-                if (!action) return `${label}: waiting`;
-                const imageUrl = assetUrls[`block_${action.type}`];
-                const image = imageUrl ? `<img src="${escapeAttr(imageUrl)}" alt="">` : "";
-                return `${image}<span>${label}: ${BLOCK_META[action.type].label} x${action.count}</span>`;
             }
 
             function setStatus(target, kind, text) {

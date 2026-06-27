@@ -14,7 +14,8 @@
       "Bash(open \"http://127.0.0.1:8000/code.html\")",
       "Bash(cd *)",
       "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}  %{content_type}\\\\n\" \"https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782580130836_01KW50WD0M4BC4T50BJWQCVJ4D.new_block_heart.png\")",
-      "Bash(awk '/\\\\.versus \\\\{/{f=1} f{print NR\": \"$0} /\\\\}/{if\\(f\\)f=0}' code.html)"
+      "Bash(awk '/\\\\.versus \\\\{/{f=1} f{print NR\": \"$0} /\\\\}/{if\\(f\\)f=0}' code.html)",
+      "Bash(grep *)"
     ]
   }
 }
