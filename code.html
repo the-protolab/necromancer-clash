@@ -234,6 +234,61 @@
             filter: drop-shadow(0 0 18px rgba(105, 228, 255, 0.5)) drop-shadow(0 12px 18px rgba(0, 0, 0, 0.68));
         }
 
+        /* Spell-hint overlaid on the ghost: the move it will play this round.
+           Just the sprite (no frame) — the icon is the element's background, set via
+           the --hint-icon custom property in JS. */
+        .ghost-move-hint {
+            position: absolute;
+            right: 5%;
+            bottom: 4%;
+            z-index: 4;
+            width: 25%;
+            max-width: 54px;
+            aspect-ratio: 1 / 1;
+            background-image: var(--hint-icon, none);
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: contain;
+            filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.55));
+            pointer-events: none;
+        }
+
+        .ghost-move-hint[hidden] {
+            display: none;
+        }
+
+        /* A light beam that sweeps across the icon every 4s. The gradient slides via
+           background-position (mask stays put), and the mask is the icon itself, so the
+           shine only runs over the sprite shape — never the transparent box. */
+        .ghost-move-hint::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(115deg,
+                transparent 38%,
+                rgba(255, 255, 255, 0.9) 50%,
+                transparent 62%);
+            background-size: 260% 100%;
+            background-repeat: no-repeat;
+            background-position: -60% 0;
+            -webkit-mask-image: var(--hint-icon, none);
+            mask-image: var(--hint-icon, none);
+            -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+            -webkit-mask-position: center;
+            mask-position: center;
+            -webkit-mask-size: contain;
+            mask-size: contain;
+            pointer-events: none;
+            animation: hint-shine 4s ease-in-out infinite;
+        }
+
+        @keyframes hint-shine {
+            0%   { background-position: -60% 0; }
+            18%  { background-position: 160% 0; }
+            100% { background-position: 160% 0; }
+        }
+
         .status-row {
             position: absolute;
             top: 4px;
@@ -1175,6 +1230,8 @@
                     <div class="character-wrap">
                         <div class="status-row" id="ghost-status"></div>
                         <img class="character-img" id="ghost-img" alt="Opponent">
+                        <!-- Hint: the spell the ghost will play this round, overlaid bottom-right. -->
+                        <div class="ghost-move-hint" id="ghost-move-hint" aria-hidden="true"></div>
                     </div>
                 </div>
             </div>
@@ -1342,6 +1399,7 @@
             const roundStatus = document.getElementById("round-status");
             const hintBar = document.getElementById("hint-bar");
             const turnStatus = document.getElementById("turn-status");
+            const ghostMoveHint = document.getElementById("ghost-move-hint");
             const vsPlayerCallout = document.getElementById("vs-player-callout");
             const vsGhostCallout = document.getElementById("vs-ghost-callout");
             const roundCounter = document.getElementById("round-counter");
@@ -2156,6 +2214,7 @@
                 if (await maybeEndGame()) return;
 
                 setTurnStatus("Player turn: waiting");
+                renderGhostHint();
                 setMessage(""); // clear the top between rounds (no instruction text)
                 gridContainer.classList.remove("locked");
                 resolving = false;
@@ -2509,6 +2568,7 @@
                 renderHud();
                 renderGrid();
                 setTurnStatus("Player turn: waiting");
+                renderGhostHint();
             }
 
             function renderHud() {
@@ -2559,6 +2619,20 @@
 
             function setTurnStatus(text) {
                 turnStatus.textContent = text;
+            }
+
+            // Hint badge: the spell the ghost will play this round (the currently queued
+            // action — executeRound consumes this same index before incrementing).
+            function renderGhostHint() {
+                const action = activeGhostActions[ghostActionIndex % activeGhostActions.length];
+                const url = action ? assetUrls[`block_${action.type}`] : null;
+                if (url) {
+                    ghostMoveHint.style.setProperty("--hint-icon", `url("${url}")`);
+                    ghostMoveHint.hidden = false;
+                } else {
+                    ghostMoveHint.hidden = true;
+                    ghostMoveHint.style.removeProperty("--hint-icon");
+                }
             }
 
             // Text shown while the opponent takes its turn. The official ghost is an exact
