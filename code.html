@@ -1080,8 +1080,60 @@
             }
 
             #grid-container {
-                width: min(94vw, max(238px, calc(100dvh - var(--battle-height) - 76px)), 430px);
+                width: min(94vw, max(238px, calc(100dvh - var(--battle-height) - 76px)), 760px);
                 padding: 5px;
+            }
+        }
+
+        /* Large PORTRAIT surfaces (e.g. the Astrocade platform iframe at 720x1280).
+           Phones and the ~512px local preview are < 600px wide, so they are
+           untouched — only large portrait viewports get the battle area scaled up
+           so the characters/VS/HP fill the tall battlefield instead of hugging
+           the bottom with empty space above. */
+        @media (min-width: 600px) and (orientation: portrait) {
+            .combat-row {
+                inset: 44px 0 0;
+                padding: 0 3vw 16px;
+                grid-template-columns: minmax(0, 1fr) minmax(60px, 13vw) minmax(0, 1fr);
+                gap: 6px;
+            }
+
+            .hp-panel {
+                width: min(40vw, 280px);
+                margin-bottom: 10px;
+            }
+
+            .name-row {
+                font-size: 20px;
+            }
+
+            .hp-track {
+                height: 26px;
+            }
+
+            .character-wrap {
+                width: min(50vw, 330px);
+                height: min(34dvh, 300px);
+                min-width: 0;
+                min-height: 0;
+            }
+
+            /* The sprite normally renders at its intrinsic size (only max-capped),
+               so a bigger wrap left it stranded at the bottom. Force it to fill the
+               wrap so the character actually grows into the space. */
+            .character-img {
+                width: 100%;
+                height: 100%;
+                object-position: center bottom;
+            }
+
+            .versus {
+                width: min(13vw, 96px);
+                height: min(13vw, 96px);
+            }
+
+            .vs-callout {
+                font-size: 22px;
             }
         }
 
@@ -1223,6 +1275,45 @@
             if (window.__necromancersClashStarted) return;
             window.__necromancersClashStarted = true;
             installLocalAstrocadeFallback();
+
+            // ===== TEMP DEBUG PROBE — remove after diagnosing platform sizing =====
+            // Shows on-screen whether 100dvh diverges from 100% inside the iframe.
+            // If gameH < bodyH on the platform, the dvh-based layout is the culprit.
+            (function viewportProbe() {
+                const probe = document.createElement("div");
+                probe.style.cssText =
+                    "position:fixed;top:0;left:0;z-index:999999;background:rgba(0,0,0,.85);" +
+                    "color:#7CFC00;font:11px/1.4 monospace;padding:5px 7px;white-space:pre;" +
+                    "pointer-events:none;border-bottom-right-radius:6px;max-width:100%";
+                // A throwaway element measured in dvh, to read what 100dvh actually resolves to.
+                const dvhMeter = document.createElement("div");
+                dvhMeter.style.cssText = "position:fixed;top:0;left:0;height:100dvh;width:0;pointer-events:none;visibility:hidden";
+                document.body.appendChild(dvhMeter);
+                function fmt(n) { return Math.round(n); }
+                function update() {
+                    const gw = document.getElementById("game-world");
+                    const dvh100 = dvhMeter.clientHeight;
+                    const bodyH = document.body.clientHeight;
+                    const gameH = gw ? gw.clientHeight : -1;
+                    probe.textContent =
+                        "iframe(win.innerH)=" + fmt(window.innerHeight) +
+                        "  docClientH=" + fmt(document.documentElement.clientHeight) + "\n" +
+                        "100dvh=" + fmt(dvh100) + "   bodyH(100%)=" + fmt(bodyH) + "\n" +
+                        "game-worldH=" + fmt(gameH) +
+                        "   dvh<body? " + (dvh100 < bodyH - 1 ? "YES (bug)" : "no") + "\n" +
+                        "win.innerW=" + fmt(window.innerWidth) +
+                        "  docClientW=" + fmt(document.documentElement.clientWidth);
+                    if (typeof lib !== "undefined" && lib.log) {
+                        lib.log("[probe] " + probe.textContent.replace(/\n/g, " | "));
+                    }
+                }
+                document.body.appendChild(probe);
+                update();
+                window.addEventListener("resize", update);
+                setTimeout(update, 500);
+                setTimeout(update, 1500);
+            })();
+            // ===== END TEMP DEBUG PROBE =====
 
             const BLOCK_TYPES = ["sword", "heart", "shield", "ice"];
             const BLOCK_META = {
