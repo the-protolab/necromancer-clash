@@ -481,6 +481,65 @@
             100% { opacity: 0; transform: translate(-50%, 4px) scale(0.2, 0.2); }
         }
 
+        /* Reusable jelly squash — scale only, no baked-in translate, so it composes
+           on any element regardless of how it's centred (unlike jellyJumpIn/Out, whose
+           translate(-50%) is welded into every keyframe for the left:50% callouts). */
+        @keyframes jellyPop {
+            0%   { transform: scale(0.3, 0.3); }
+            40%  { transform: scale(1.18, 0.82); }
+            65%  { transform: scale(0.9, 1.12); }
+            82%  { transform: scale(1.05, 0.96); }
+            100% { transform: scale(1, 1); }
+        }
+
+        @keyframes jellyPopOut {
+            0%   { transform: scale(1, 1); }
+            30%  { transform: scale(1.14, 0.84); }
+            100% { transform: scale(0.2, 0.2); opacity: 0; }
+        }
+
+        /* Big combo "shout": grows live over the grid/battlefield seam as you trace a
+           combo, then flies up/down to the VS slot showing the total. OUTER positions
+           and flies; INNER carries the text and takes the jelly pops. */
+        .combo-shout {
+            position: absolute;
+            left: 50%;
+            top: var(--battle-height);
+            transform: translate(-50%, -50%);
+            transform-origin: center;
+            z-index: 7;
+            pointer-events: none;
+            opacity: 0;
+            font-weight: 900;
+            font-size: clamp(38px, 12vw, 78px);
+            line-height: 1;
+            letter-spacing: 0.5px;
+            color: var(--shout-color, #fff);
+            white-space: nowrap;
+            transition: transform 460ms cubic-bezier(0.18, 0.89, 0.32, 1.28),
+                        font-size 460ms ease,
+                        opacity 200ms ease;
+        }
+
+        .combo-shout.show { opacity: 1; }
+
+        .combo-shout-text { display: inline-block; }
+        /* The jelly jump fires ONLY on the number span (×N / total) — the word never bounces. */
+        .shout-name, .shout-num {
+            display: inline-block;
+            /* Cartoon dark outline + SOLID drop shadow below (no blur). em units so both keep
+               their proportion as the shout shrinks on its flight to the VS slot. The shadow
+               offset is larger than the stroke width on purpose, so the hard shadow peeks out
+               below the thick outline instead of hiding behind it. paint-order draws the stroke
+               BEHIND the fill, or it would eat the letters. */
+            -webkit-text-stroke: 0.1em #1d1d1d;
+            paint-order: stroke fill;
+            text-shadow: 0 0.14em 0 #1d1d1d;
+        }
+        .shout-name:not(:empty) + .shout-num { margin-left: 0.22em; }
+        .shout-num.pop { animation: jellyPop 420ms cubic-bezier(0.18, 0.89, 0.32, 1.28); }
+        .combo-shout-text.out { animation: jellyPopOut 280ms cubic-bezier(0.6, -0.28, 0.74, 0.05) forwards; }
+
         #effect-layer {
             position: absolute;
             z-index: 5;
@@ -1385,9 +1444,9 @@
             // Uppercase names shown in the VS callouts above/below the VS bubble. Tweak freely.
             const COMBAT_CALLOUT = {
                 sword: "ATTACK",
-                heart: "HEALTH",
+                heart: "HEAL",
                 shield: "SHIELD",
-                ice: "ICE"
+                ice: "FREEZE"
             };
             const DEFAULT_SETTINGS = {
                 startingHP: 40,
@@ -1481,6 +1540,11 @@
             const gameOverTitle = document.getElementById("game-over-title");
             const gameOverStats = document.getElementById("game-over-stats");
             const playAgainBtn = document.getElementById("play-again-btn");
+
+            // Big combo "shout" overlay state (see the shout module below). Declared here so
+            // the early startNewMatch() -> clearVsCallouts() at boot can safely touch it.
+            const TYPE_COLOR = { sword: "#ff6b5f", heart: "#ff9ad6", shield: "#1668E2", ice: "#4cd6ef" };
+            const shouts = {}; // side -> { outer, inner, state: 'idle'|'live'|'settled', count }
 
             window.gameConfig = window.gameConfig || {};
             window.gameConfig.settings = mergeSettings(DEFAULT_SETTINGS, window.gameConfig.settings || {});
@@ -1862,9 +1926,9 @@
                 gridContainer.addEventListener("pointerdown", onPointerDown);
                 gridContainer.addEventListener("pointermove", onPointerMove);
                 gridContainer.addEventListener("pointerup", onPointerUp);
-                gridContainer.addEventListener("pointercancel", clearSelection);
+                gridContainer.addEventListener("pointercancel", abortSelection);
                 gridContainer.addEventListener("lostpointercapture", () => {
-                    if (selection && !resolving) clearSelection();
+                    if (selection && !resolving) abortSelection();
                 });
             }
 
@@ -1879,6 +1943,7 @@
                 selectionIsValid = false;
                 trailGeo = computeTrailGeometry(); // read layout once per drag, not per move
                 lastHover = cell;
+                ensureShout("player").state = "idle"; // re-arm the big shout for this fresh drag
                 updateSelectionMarks();
                 playSelectNote(0); // base note of the rising select cadence (anchor tile)
             }
@@ -1906,13 +1971,24 @@
                 }
 
                 const finalCells = selection.cells.slice();
-                const finalValid = selectionIsValid;
-                if (!finalValid) {
+                const action = selectionIsValid ? validateSelection(finalCells) : null;
+                // Valid -> the big shout flies up to the VS slot with the total; invalid ->
+                // it pops out in place. Done before clearSelection() (which leaves the shout
+                // alone) so the in-flight shout survives the teardown below.
+                releaseShout("player", action);
+                if (!action) {
                     flashInvalidSelection();
                     return;
                 }
                 clearSelection();
                 executeRound(finalCells);
+            }
+
+            // Aborts with no pointerup (browser-cancelled / lost capture): dismiss the live
+            // shout and tear down the selection.
+            function abortSelection() {
+                releaseShout("player", null);
+                clearSelection();
             }
 
             function tileFromPoint(x, y) {
@@ -2037,6 +2113,12 @@
                     if (selection.invalid) tile.classList.add("invalid");
                 });
                 renderTrail();
+                // Drive the big live shout from the current chain head + length. Skipped once
+                // the shout has flown up (settled) or while flagged invalid (mid pop-out).
+                if (!selection.invalid) {
+                    const head = getBlock(selection.cells[0].row, selection.cells[0].col);
+                    if (head) liveShout("player", head.type, selection.cells.length);
+                }
             }
 
             // Cell centres are derived analytically from the (uniform) grid geometry, read
@@ -2189,17 +2271,20 @@
                 renderGhostReplayGrid(ghostAction.type, 0); // black board + banner, nothing revealed
                 await sleep(TIMING.ghost.bannerLeadMs);      // let the banner register first
 
+                ensureShout("ghost").state = "idle"; // re-arm the ghost shout for this replay
                 renderGhostReplayGrid(ghostAction.type, 1);
                 playSelectNote(0); // ghost retraces its run with the same rising cadence as you
+                liveShout("ghost", ghostAction.type, 1);
                 await sleep(TIMING.ghost.firstTileMs);
                 for (let i = 2; i <= cells.length; i++) {
                     renderGhostReplayGrid(ghostAction.type, i);
                     drawGhostTrail(cells, i, geo);
                     playSelectNote(i - 1); // one rising note per revealed tile
+                    liveShout("ghost", ghostAction.type, i); // big shout grows with the reveal
                     await sleep(TIMING.ghost.perTileMs);
                 }
-                // Ghost just "finished tracing" -> pop its move callout below the VS bubble.
-                showVsCallout(vsGhostCallout, ghostAction);
+                // Ghost just "finished tracing" -> fly its big shout down to the VS slot with its total.
+                releaseShout("ghost", ghostAction);
                 await sleep(TIMING.ghost.finalHoldMs); // hold so the player can digest the full selection
 
                 trailSvg.classList.remove("ghost");
@@ -2249,28 +2334,27 @@
                 ghostActionIndex += 1;
 
                 setTurnStatus(ghostTurnText(ghostStep));
-                // You just finished tracing -> pop your move callout above the VS bubble.
-                showVsCallout(vsPlayerCallout, playerAction);
+                // Your big shout was already launched up to the VS slot on pointer-up.
                 markRemoving(cells);
                 await sleep(TIMING.tileRemoveMs);
                 removeAndRefill(cells);
                 renderGrid();
                 await sleep(TIMING.boardSettleMs); // let the refilled board settle before handing off to the ghost
 
-                // Show what the ghost picked before the scene effects fire. The replay pops the
-                // ghost callout itself when its trail finishes; if there's no replay (default
-                // wraith / legacy saves) we pop it here so both callouts still read before combat.
+                // Show what the ghost picked before the scene effects fire. The replay flies the
+                // ghost shout down itself when its trail finishes; if there's no replay (default
+                // wraith / legacy saves) we settle it at the slot here so both totals still read.
                 const ghostReplayed = await playGhostSelectionReplay(ghostAction);
                 if (!ghostReplayed) {
-                    showVsCallout(vsGhostCallout, ghostAction);
+                    releaseShout("ghost", ghostAction);
                     await sleep(TIMING.callout.soloHoldMs);
                 }
 
-                // Both move callouts stay flanking VS through the whole attack sequence...
+                // Both big shouts stay flanking VS through the whole attack sequence...
                 await resolveCombat(playerAction, ghostAction);
                 // ...then jelly out as the round ends.
-                hideVsCallout(vsPlayerCallout);
-                hideVsCallout(vsGhostCallout);
+                hideShout("player");
+                hideShout("ghost");
                 roundNumber += 1;
                 renderHud();
 
@@ -2749,23 +2833,149 @@
                 setTimeout(() => turnStatus.classList.remove("reveal"), 480);
             }
 
-            // VS callouts: pop a side's move ("ICE ×4") in/out with a jelly-jump animation.
-            function showVsCallout(el, action) {
-                el.textContent = `${COMBAT_CALLOUT[action.type] || action.type.toUpperCase()} ×${action.count}`;
-                el.classList.remove("hide");
-                void el.offsetWidth; // restart the entrance animation
-                el.classList.add("show");
-            }
-
-            function hideVsCallout(el) {
-                if (!el.classList.contains("show")) return;
-                el.classList.remove("show");
-                void el.offsetWidth;
-                el.classList.add("hide");
-            }
-
+            // The #vs-*-callout nodes are kept only as invisible geometry anchors (the slots
+            // the combo shouts fly to); they're never shown. clearVsCallouts also dismisses
+            // the big shouts on match reset.
             function clearVsCallouts() {
                 [vsPlayerCallout, vsGhostCallout].forEach((el) => el.classList.remove("show", "hide"));
+                hideShout("player");
+                hideShout("ghost");
+            }
+
+            // --- Combo "shout" -----------------------------------------------------------
+            // A big, element-coloured callout that grows live over the grid/battlefield seam
+            // as a combo is traced, then flies to the VS slot (up for the player, down for the
+            // ghost) and morphs into the round's total value. Purely visual: it only reads
+            // selection/settings and never mutates game state. The old #vs-*-callout nodes are
+            // kept as invisible geometry anchors (their collapsed scale(0) box marks the slot
+            // the shout flies to). TYPE_COLOR / shouts are declared up top with the rest of
+            // the game state so the early startNewMatch() -> clearVsCallouts() can touch them.
+
+            function ensureShout(side) {
+                let s = shouts[side];
+                if (s) return s;
+                const outer = document.createElement("div");
+                outer.className = `combo-shout ${side}`;
+                const inner = document.createElement("div");
+                inner.className = "combo-shout-text";
+                const nameEl = document.createElement("span"); // the word (never bounces)
+                nameEl.className = "shout-name";
+                const numEl = document.createElement("span");  // ×N / total (the only part that pops)
+                numEl.className = "shout-num";
+                inner.appendChild(nameEl);
+                inner.appendChild(numEl);
+                outer.appendChild(inner);
+                world.appendChild(outer);
+                s = shouts[side] = { outer, inner, nameEl, numEl, state: "idle", count: 0 };
+                return s;
+            }
+
+            function shoutName(type) {
+                return COMBAT_CALLOUT[type] || type.toUpperCase();
+            }
+
+            // Released value, split into {name, num}. The jelly only ever fires on `num`, so
+            // numeric totals bounce while the ice word ("FREEZE") stays still.
+            function shoutReleaseParts(action) {
+                if (action.type === "ice") return { name: shoutName(action.type), num: "" };
+                if (action.type === "sword") return { name: "", num: `−${Math.round(actionAmount(action) * settings.damageMultiplier)}` };
+                if (action.type === "heart") return { name: "", num: `+${Math.round(actionAmount(action) * settings.healMultiplier)}` };
+                return { name: "", num: String(actionAmount(action)) }; // shield: absorption (count*3)
+            }
+
+            // Set the two spans; replay the jelly on the number span only (and only when it
+            // actually holds something, so words never bounce).
+            function applyShoutText(s, name, num, popNumber) {
+                s.inner.classList.remove("out");
+                s.nameEl.textContent = name;
+                s.numEl.textContent = num;
+                s.numEl.classList.remove("pop");
+                if (popNumber && num) {
+                    void s.numEl.offsetWidth; // restart the squash animation
+                    s.numEl.classList.add("pop");
+                }
+            }
+
+            // Reset the outer back to its base (seam) position, big size, no flight transform.
+            function resetShoutPosition(outer) {
+                outer.style.transition = "none";
+                outer.style.left = "50%";
+                outer.style.top = "var(--battle-height)";
+                outer.style.fontSize = "";
+                outer.style.transform = "translate(-50%, -50%)";
+                void outer.offsetWidth; // commit before re-enabling transitions
+                outer.style.transition = "";
+            }
+
+            // Called as the player traces (or the ghost replay reveals): show/update the big
+            // label at the seam, popping only when the count actually changes.
+            function liveShout(side, type, count) {
+                const s = ensureShout(side);
+                if (s.state === "settled") return; // already flown up; don't yank it back
+                if (s.state !== "live") resetShoutPosition(s.outer);
+                s.outer.style.setProperty("--shout-color", TYPE_COLOR[type] || "#fff");
+                s.outer.classList.add("show");
+                const changed = s.state !== "live" || s.count !== count;
+                // Name stays put; only the ×N number bounces when the count changes.
+                applyShoutText(s, shoutName(type), count > 1 ? `×${count}` : "", changed);
+                s.state = "live";
+                s.count = count;
+            }
+
+            // End of a trace/replay. With a valid action: fly to the VS slot and show the total.
+            // Without one (cancel): pop out in place. No build-up (e.g. ghost with no replay):
+            // appear straight at the slot with the total.
+            function releaseShout(side, action) {
+                const s = ensureShout(side);
+                if (!action) {
+                    if (s.state === "idle") return;
+                    s.inner.classList.add("out");
+                    s.outer.classList.remove("show");
+                    s.state = "idle";
+                    return;
+                }
+                const anchor = side === "player" ? vsPlayerCallout : vsGhostCallout;
+                const target = centerOf(anchor);
+                s.outer.style.setProperty("--shout-color", TYPE_COLOR[action.type] || "#fff");
+
+                if (s.state === "live") {
+                    // Fly from the current seam position to the slot, shrinking as it goes.
+                    const from = centerOf(s.outer);
+                    s.outer.style.left = `${from.x}px`;
+                    s.outer.style.top = `${from.y}px`;
+                    s.outer.style.transform = "translate(-50%, -50%)";
+                    void s.outer.offsetWidth; // commit the start before tweening
+                    requestAnimationFrame(() => {
+                        const dx = target.x - from.x;
+                        const dy = target.y - from.y;
+                        s.outer.style.fontSize = "20px";
+                        s.outer.style.transform = `translate(-50%, -50%) translate(${dx}px, ${dy}px)`;
+                    });
+                    const parts = shoutReleaseParts(action);
+                    applyShoutText(s, parts.name, parts.num, true);
+                } else {
+                    // No build-up to fly from: just appear at the slot.
+                    resetShoutPosition(s.outer);
+                    s.outer.style.transition = "none";
+                    s.outer.style.left = `${target.x}px`;
+                    s.outer.style.top = `${target.y}px`;
+                    s.outer.style.fontSize = "20px";
+                    s.outer.style.transform = "translate(-50%, -50%)";
+                    void s.outer.offsetWidth;
+                    s.outer.style.transition = "";
+                    s.outer.classList.add("show");
+                    const parts = shoutReleaseParts(action);
+                    applyShoutText(s, parts.name, parts.num, true);
+                }
+                s.state = "settled";
+            }
+
+            function hideShout(side) {
+                const s = shouts[side];
+                if (!s || s.state === "idle") return;
+                s.inner.classList.add("out");
+                s.outer.classList.remove("show");
+                s.state = "idle";
             }
 
             function labelFor(side) {
