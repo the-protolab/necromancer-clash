@@ -165,6 +165,7 @@
         }
 
         .hp-track {
+            position: relative;
             width: 100%;
             height: 20px;
             margin-top: 5px;
@@ -205,6 +206,38 @@
             background-size: 40px 40px;
             animation: flow 1s linear infinite;
             will-change: transform;
+        }
+
+        /* SHIELD absorption layer: a blue bar drawn over the green HP fill.
+           Width = shield/maxHp. Depletes (left→right) revealing HP underneath. */
+        .shield-fill {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 0;
+            border-radius: 10px 0 0 10px;
+            background: #46a8ff;
+            box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.4),
+                        inset 0 -4px 0 rgba(0, 0, 0, 0.25);
+            transition: width 260ms ease;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .shield-text {
+            position: absolute;
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 13px;
+            font-weight: 700;
+            color: #eaf6ff;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+            opacity: 0;
+            transition: opacity 200ms ease;
+            pointer-events: none;
+            z-index: 3;
         }
 
         @keyframes flow {
@@ -995,6 +1028,10 @@
             color: #ff9ad6;
         }
 
+        .float-text.shield {
+            color: #6fc0ff;
+        }
+
         @keyframes floatUp {
             0% {
                 opacity: 0;
@@ -1215,7 +1252,7 @@
                             <span>Player</span>
                             <span id="player-hp-text">40 / 40</span>
                         </div>
-                        <div class="hp-track"><div class="hp-fill" id="player-hp-bar"></div></div>
+                        <div class="hp-track"><div class="hp-fill" id="player-hp-bar"></div><div class="shield-fill" id="player-shield-bar"></div><span class="shield-text" id="player-shield-text"></span></div>
                     </div>
                     <div class="character-wrap">
                         <div class="status-row" id="player-status"></div>
@@ -1235,7 +1272,7 @@
                             <span id="opponent-name">Opponent</span>
                             <span id="ghost-hp-text">40 / 40</span>
                         </div>
-                        <div class="hp-track"><div class="hp-fill" id="ghost-hp-bar"></div></div>
+                        <div class="hp-track"><div class="hp-fill" id="ghost-hp-bar"></div><div class="shield-fill" id="ghost-shield-bar"></div><span class="shield-text" id="ghost-shield-text"></span></div>
                     </div>
                     <div class="character-wrap">
                         <div class="status-row" id="ghost-status"></div>
@@ -1416,6 +1453,10 @@
             const ghostHpText = document.getElementById("ghost-hp-text");
             const playerHpBar = document.getElementById("player-hp-bar");
             const ghostHpBar = document.getElementById("ghost-hp-bar");
+            const playerShieldBar = document.getElementById("player-shield-bar");
+            const ghostShieldBar = document.getElementById("ghost-shield-bar");
+            const playerShieldText = document.getElementById("player-shield-text");
+            const ghostShieldText = document.getElementById("ghost-shield-text");
             const playerStatus = document.getElementById("player-status");
             const ghostStatus = document.getElementById("ghost-status");
             const playerImg = document.getElementById("player-img");
@@ -1452,8 +1493,8 @@
             registerParameters();
 
             let grid = createPlayableGrid();
-            let player = { hp: settings.startingHP, maxHp: settings.startingHP };
-            let ghost = { hp: settings.startingHP, maxHp: settings.startingHP };
+            let player = { hp: settings.startingHP, maxHp: settings.startingHP, shield: 0 };
+            let ghost = { hp: settings.startingHP, maxHp: settings.startingHP, shield: 0 };
             let activeGhostActions = DEFAULT_GHOST_ACTIONS.slice();
             let ghostActionIndex = 0;
             let currentRunActions = [];
@@ -1497,8 +1538,8 @@
             // and gating runs off the gameOver/resolving/locked flags — so this never re-binds.
             async function startNewMatch() {
                 grid = createPlayableGrid();
-                player = { hp: settings.startingHP, maxHp: settings.startingHP };
-                ghost = { hp: settings.startingHP, maxHp: settings.startingHP };
+                player = { hp: settings.startingHP, maxHp: settings.startingHP, shield: 0 };
+                ghost = { hp: settings.startingHP, maxHp: settings.startingHP, shield: 0 };
                 activeGhostActions = DEFAULT_GHOST_ACTIONS.slice();
                 ghostActionIndex = 0;
                 currentRunActions = [];
@@ -2240,28 +2281,33 @@
                 await sleep(460);
 
                 // 2) Shields rise FIRST, with priority, and stay up through the clash.
+                //    A shield is an absorption layer worth actionAmount() (count*3),
+                //    shown as the blue bar; it expires at the end of the round.
                 const playerHasShield = playerAction.type === "shield";
                 const ghostHasShield = ghostAction.type === "shield";
                 let playerShield = null;
                 let ghostShield = null;
                 if (playerHasShield) {
                     setStatus("player", "shield", "Shield");
+                    player.shield = actionAmount(playerAction);
                     playerShield = raiseShield("player");
                 }
                 if (ghostHasShield) {
                     setStatus("ghost", "shield", "Shield");
+                    ghost.shield = actionAmount(ghostAction);
                     ghostShield = raiseShield("ghost");
                 }
                 if (playerHasShield || ghostHasShield) {
+                    renderHud();
                     setMessage(`${shieldOwners(playerHasShield, ghostHasShield)} raised a shield!`);
                     await sleep(320);
                 }
 
-                // 3) Resolve flags (combat rules unchanged).
-                const playerBlocked = ghostHasShield && isHostile(playerAction.type);
-                const ghostBlocked = playerHasShield && isHostile(ghostAction.type);
-                const playerCanceled = ghostAction.type === "ice" && !ghostBlocked;
-                const ghostCanceled = playerAction.type === "ice" && !playerBlocked;
+                // 3) Resolve flags. Shield no longer blocks; ice always cancels the
+                //    opponent's offensive action (sword/heal). Shield absorption is
+                //    handled inside performSword.
+                const playerCanceled = ghostAction.type === "ice";
+                const ghostCanceled = playerAction.type === "ice";
 
                 // 4) Frozen feedback BEFORE the cancelled action would have fired.
                 if (playerCanceled) {
@@ -2276,16 +2322,16 @@
                 }
                 if (playerCanceled || ghostCanceled) await sleep(360);
 
-                // 5) Ice projectiles (shatter the target shield if it blocked the freeze).
+                // 5) Ice projectiles. Shield no longer blocks ice.
                 const iceEffects = [];
-                if (playerAction.type === "ice") iceEffects.push(performIce("player", playerBlocked, "ghost", ghostShield));
-                if (ghostAction.type === "ice") iceEffects.push(performIce("ghost", ghostBlocked, "player", playerShield));
+                if (playerAction.type === "ice") iceEffects.push(performIce("player", "ghost"));
+                if (ghostAction.type === "ice") iceEffects.push(performIce("ghost", "player"));
                 await Promise.all(iceEffects);
 
-                // 6) Swords (a blocked strike shatters the shield instead of doing nothing).
+                // 6) Swords. The target's shield absorbs first; leftover hits HP.
                 const swordEffects = [];
-                if (playerAction.type === "sword") swordEffects.push(performSword("player", playerAction, playerCanceled, playerBlocked, ghostShield));
-                if (ghostAction.type === "sword") swordEffects.push(performSword("ghost", ghostAction, ghostCanceled, ghostBlocked, playerShield));
+                if (playerAction.type === "sword") swordEffects.push(performSword("player", playerAction, playerCanceled, ghostShield));
+                if (ghostAction.type === "sword") swordEffects.push(performSword("ghost", ghostAction, ghostCanceled, playerShield));
                 await Promise.all(swordEffects);
 
                 // 7) Heals.
@@ -2294,10 +2340,14 @@
                 if (ghostAction.type === "heart") healEffects.push(performHeal("ghost", ghostAction, ghostCanceled));
                 await Promise.all(healEffects);
 
-                // 8) Drop any shields that were never struck.
+                // 8) Drop any shields that were never struck. Shields expire each round
+                //    (not cumulative): clear the absorption and empty the blue bar.
                 await sleep(160);
                 fadeShield(playerShield);
                 fadeShield(ghostShield);
+                player.shield = 0;
+                ghost.shield = 0;
+                renderHud();
                 clearStatus();
             }
 
@@ -2305,7 +2355,7 @@
                 return type === "sword" || type === "ice";
             }
 
-            async function performSword(actor, action, canceled, blocked, targetShield) {
+            async function performSword(actor, action, canceled, targetShield) {
                 const target = actor === "player" ? "ghost" : "player";
                 if (canceled) {
                     // Frozen: the strike never leaves the hand.
@@ -2313,30 +2363,33 @@
                     return sleep(260);
                 }
                 await projectile(actor, target, "sword");
-                if (blocked) {
-                    shatterShield(targetShield);
+                let amount = Math.round(actionAmount(action) * Number(settings.damageMultiplier || 1));
+                const targetObj = target === "player" ? player : ghost;
+                // Shield absorbs first: the blue bar drains before any HP is lost.
+                if (targetObj.shield > 0) {
+                    const absorbed = Math.min(targetObj.shield, amount);
+                    targetObj.shield -= absorbed;
+                    amount -= absorbed;
+                    renderHud();
                     showBurst(target, "block");
-                    setMessage(`Blocked by ${labelFor(target)}'s Shield!`);
-                    return sleep(340);
+                    floatNumber(target, `-${absorbed}`, "shield");
+                    if (targetObj.shield <= 0) shatterShield(targetShield);
+                    await sleep(260);
                 }
-                const amount = Math.round(actionAmount(action) * Number(settings.damageMultiplier || 1));
-                damage(target, amount, actor);
-                showBurst(target, "hit");
-                floatNumber(target, `-${amount}`, "dmg");
-                shake(target);
-                await sleep(260);
+                // Leftover damage lands on HP in the same round.
+                if (amount > 0) {
+                    damage(target, amount, actor);
+                    showBurst(target, "hit");
+                    floatNumber(target, `-${amount}`, "dmg");
+                    shake(target);
+                    await sleep(260);
+                }
             }
 
-            async function performIce(actor, blocked, target, targetShield) {
+            async function performIce(actor, target) {
                 await projectile(actor, target, "ice");
-                if (blocked) {
-                    shatterShield(targetShield);
-                    showBurst(target, "block");
-                    setMessage(`Blocked by ${labelFor(target)}'s Shield!`);
-                } else {
-                    showBurst(target, "ice");
-                    playSound("ice_freeze_sfx");
-                }
+                showBurst(target, "ice");
+                playSound("ice_freeze_sfx");
                 await sleep(240);
             }
 
@@ -2361,7 +2414,9 @@
             }
 
             function actionAmount(action) {
-                return 15 + (action.count - 3) * 5;
+                // Sword scales at 5 per tile; heart and shield (absorption) at 3 per tile.
+                const per = action.type === "sword" ? 5 : 3;
+                return action.count * per;
             }
 
             function damage(target, amount, actor) {
@@ -2583,7 +2638,21 @@
                 ghostHpText.textContent = `${ghost.hp} / ${ghost.maxHp}`;
                 playerHpBar.style.width = `${Math.max(0, player.hp / player.maxHp * 100)}%`;
                 ghostHpBar.style.width = `${Math.max(0, ghost.hp / ghost.maxHp * 100)}%`;
+                renderShieldBar(playerShieldBar, playerShieldText, player.shield, player.maxHp);
+                renderShieldBar(ghostShieldBar, ghostShieldText, ghost.shield, ghost.maxHp);
                 roundCounter.textContent = `Round ${roundNumber}`;
+            }
+
+            function renderShieldBar(bar, text, shield, maxHp) {
+                const s = shield > 0 ? shield : 0;
+                const pct = maxHp > 0 ? Math.min(100, s / maxHp * 100) : 0;
+                bar.style.width = `${pct}%`;
+                if (s > 0) {
+                    text.textContent = s;
+                    text.style.opacity = "1";
+                } else {
+                    text.style.opacity = "0";
+                }
             }
 
             function renderGrid() {
