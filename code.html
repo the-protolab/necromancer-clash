@@ -1398,10 +1398,10 @@
             icon_card: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782567287239_01KW4MMEE7JBYRCGSCVTJWHWM2.PictoIcon_Card 2.png",
             icon_critical: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782567287378_01KW4MMEJJABK9QS5X0VNHXK89.PictoIcon_Critical 2.png",
             icon_battle: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782575359125_01KW4WAS4NHQNEB134B1SN1NZ5.ItemIcon_Battle.png",
-            block_sword: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782579075453_01KW4ZW6BXHMF5QK258C79R09G.block_sword.png",
-            block_heart: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782580130836_01KW50WD0M4BC4T50BJWQCVJ4D.new_block_heart.png",
-            block_shield: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782579075314_01KW4ZW67JXE170E4E33MGY3R6.block_shield.png",
-            block_ice: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782579075055_01KW4ZW5ZFVM5E8SC2ASE0ZYPV.block_ice.png",
+            block_sword: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782632841244_01KW6K500W6MDXH7ES0MTMCJXD.w_block_sword.webp",
+            block_heart: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782632399899_01KW6JQH0A8PRHM0WN5451XNDT.w_block_heart.webp",
+            block_shield: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782632841066_01KW6K4ZVA48ZSQDF136GF6HXX.w_block_shield.webp",
+            block_ice: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782632411826_01KW6JQWNJJA0TFBNFJQYKAQ2S.w_block_ice.webp",
             sword_attack_sfx: "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/sword_attack_sfx_ce773fbf-1143-47d3-8fba-502203930999.mp3",
             heal_sfx: "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/heal_sfx_d93650fd-2951-4457-908b-b9d9e8419ea3.mp3",
             shield_sfx: "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/shield_sfx_1a25d87b-de73-4c46-ac8a-08cebfb837cf.mp3",
@@ -1697,10 +1697,19 @@
                     "ghost_victory_sfx",
                     "defeat_sfx"
                 ];
+                // The block art was converted png -> webp; the platform asset_map now
+                // keys these under their ".webp" names, so map our logical ids onto them.
+                const ASSET_KEY_OVERRIDES = {
+                    block_sword: "w_block_sword.webp",
+                    block_heart: "w_block_heart.webp",
+                    block_shield: "w_block_shield.webp",
+                    block_ice: "w_block_ice.webp"
+                };
                 const urls = {};
                 ids.forEach((id) => {
                     try {
-                        const asset = window.lib && typeof lib.getAsset === "function" ? lib.getAsset(id) : null;
+                        const lookupId = ASSET_KEY_OVERRIDES[id] || id;
+                        const asset = window.lib && typeof lib.getAsset === "function" ? lib.getAsset(lookupId) : null;
                         urls[id] = asset && asset.url ? asset.url : (LOCAL_ASSET_URLS[id] || "");
                     } catch (error) {
                         urls[id] = "";

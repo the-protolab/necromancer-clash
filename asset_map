@@ -5,30 +5,6 @@
 // Example: lib.getAsset["player_sprite"]
 
 const assets = {
-  "block_sword": {
-    "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782579075453_01KW4ZW6BXHMF5QK258C79R09G.block_sword.png",
-    "type": "image",
-    "aspect_ratio": [
-      807,
-      816
-    ]
-  },
-  "block_shield": {
-    "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782579075314_01KW4ZW67JXE170E4E33MGY3R6.block_shield.png",
-    "type": "image",
-    "aspect_ratio": [
-      807,
-      816
-    ]
-  },
-  "block_ice": {
-    "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782579075055_01KW4ZW5ZFVM5E8SC2ASE0ZYPV.block_ice.png",
-    "type": "image",
-    "aspect_ratio": [
-      807,
-      816
-    ]
-  },
   "battle_music": {
     "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/battle_music_2692484c-0a49-41cc-9b90-c39cec408af0.mp3",
     "type": "audio"
@@ -55,10 +31,6 @@ const assets = {
   },
   "block_match_sfx": {
     "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/block_match_sfx_cd1722f8-40ea-4901-a581-0915b1700991.mp3",
-    "type": "audio"
-  },
-  "victory_sfx": {
-    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/victory_sfx_4012d81c-3ad4-4f0d-9e47-e49d6e5f8580.mp3",
     "type": "audio"
   },
   "defeat_sfx": {
@@ -145,14 +117,6 @@ const assets = {
       512
     ]
   },
-  "block_heart": {
-    "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782580130836_01KW50WD0M4BC4T50BJWQCVJ4D.new_block_heart.png",
-    "type": "image",
-    "aspect_ratio": [
-      807,
-      816
-    ]
-  },
   "necromancer_player": {
     "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782616522417_01KW63JZNHR19GNFMTRZTASPJH.w_necromancer_player.webp",
     "type": "image",
@@ -164,5 +128,37 @@ const assets = {
   "ghost_victory_sfx": {
     "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/ghost_victory_sfx_f64b6620-a035-47b4-95c3-93fb84bd3b72.mp3",
     "type": "audio"
+  },
+  "w_block_heart.webp": {
+    "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782632399899_01KW6JQH0A8PRHM0WN5451XNDT.w_block_heart.webp",
+    "type": "image",
+    "aspect_ratio": [
+      807,
+      816
+    ]
+  },
+  "w_block_ice.webp": {
+    "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782632411826_01KW6JQWNJJA0TFBNFJQYKAQ2S.w_block_ice.webp",
+    "type": "image",
+    "aspect_ratio": [
+      807,
+      816
+    ]
+  },
+  "w_block_shield.webp": {
+    "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782632841066_01KW6K4ZVA48ZSQDF136GF6HXX.w_block_shield.webp",
+    "type": "image",
+    "aspect_ratio": [
+      807,
+      816
+    ]
+  },
+  "w_block_sword.webp": {
+    "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782632841244_01KW6K500W6MDXH7ES0MTMCJXD.w_block_sword.webp",
+    "type": "image",
+    "aspect_ratio": [
+      807,
+      816
+    ]
   }
 };
