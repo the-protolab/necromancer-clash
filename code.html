@@ -1029,10 +1029,12 @@
 
         .float-text.dmg {
             color: #ff6b5f;
+            animation-duration: 1500ms;
         }
 
         .float-text.heal {
             color: #ff9ad6;
+            animation-duration: 1500ms;
         }
 
         .float-text.shield {
@@ -2351,12 +2353,18 @@
 
                 // 8) Drop any shields that were never struck. Shields expire each round
                 //    (not cumulative): clear the absorption and empty the blue bar.
+                //    If a shield is expiring with charge left (no attack drained it),
+                //    let the bar empty at the same calm pace as an absorption beat (640ms)
+                //    instead of snapping shut — so the round closes the same with or
+                //    without an attack.
                 await sleep(160);
                 fadeShield(playerShield);
                 fadeShield(ghostShield);
+                const shieldExpiring = player.shield > 0 || ghost.shield > 0;
                 player.shield = 0;
                 ghost.shield = 0;
                 renderHud();
+                if (shieldExpiring) await sleep(640);
                 clearStatus();
             }
 
@@ -2893,7 +2901,10 @@
                 node.style.left = `${center.x}px`;
                 node.style.top = `${center.y - 30}px`;
                 effectLayer.appendChild(node);
-                setTimeout(() => node.remove(), 1020);
+                // dmg/heal linger longer (1.5s) so progress reads clearly; shield's
+                // transient stays 1s since the head badge is its main feedback.
+                const lifeMs = (kind === "dmg" || kind === "heal") ? 1520 : 1020;
+                setTimeout(() => node.remove(), lifeMs);
             }
 
             // Centered, non-blocking win banner. Lives on #game-world (not #effect-layer, which
