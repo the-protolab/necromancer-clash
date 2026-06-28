@@ -223,15 +223,24 @@
         }
 
         .character-img {
+            --flip: 1; /* horizontal facing; -1 mirrors the sprite (used by the ghost) */
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
             filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.68));
+            transform: scaleX(var(--flip));
             transition: transform 180ms ease, filter 180ms ease;
         }
 
+        /* The official ghost reuses the PLAYER sprite, mirrored horizontally and given the
+           same spectral icon treatment as the move-hint (no bespoke ghost art needed). */
         #game-world.official-ghost .ghost-side .character-img {
-            filter: drop-shadow(0 0 18px rgba(105, 228, 255, 0.5)) drop-shadow(0 12px 18px rgba(0, 0, 0, 0.68));
+            --flip: -1;
+            filter:
+                grayscale(1) sepia(1) hue-rotate(168deg) saturate(4.5) brightness(1.05)
+                drop-shadow(0 0 6px rgba(120, 220, 255, 0.95))
+                drop-shadow(0 0 13px rgba(120, 220, 255, 0.6))
+                drop-shadow(0 12px 18px rgba(0, 0, 0, 0.68));
         }
 
         /* Spell-hint overlaid on the ghost: the move it will play this round.
@@ -898,22 +907,22 @@
 
         @keyframes hitShake {
             0%, 100% {
-                transform: translateX(0);
+                transform: scaleX(var(--flip)) translateX(0);
             }
             25% {
-                transform: translateX(-8px);
+                transform: scaleX(var(--flip)) translateX(-8px);
             }
             75% {
-                transform: translateX(8px);
+                transform: scaleX(var(--flip)) translateX(8px);
             }
         }
 
         @keyframes healPulse {
             0%, 100% {
-                transform: scale(1);
+                transform: scaleX(var(--flip)) scale(1);
             }
             45% {
-                transform: scale(1.06);
+                transform: scaleX(var(--flip)) scale(1.06);
                 filter: drop-shadow(0 0 22px rgba(255, 134, 206, 0.9));
             }
         }
@@ -961,11 +970,11 @@
         }
 
         @keyframes frozenShiver {
-            0%, 100% { transform: translateX(0); }
-            20% { transform: translateX(-3px); }
-            40% { transform: translateX(3px); }
-            60% { transform: translateX(-2px); }
-            80% { transform: translateX(2px); }
+            0%, 100% { transform: scaleX(var(--flip)) translateX(0); }
+            20% { transform: scaleX(var(--flip)) translateX(-3px); }
+            40% { transform: scaleX(var(--flip)) translateX(3px); }
+            60% { transform: scaleX(var(--flip)) translateX(-2px); }
+            80% { transform: scaleX(var(--flip)) translateX(2px); }
         }
 
         .float-text {
@@ -1696,7 +1705,9 @@
                 opponentName.textContent = opponentLabel;
                 ghostImg.alt = opponentLabel;
                 world.classList.toggle("official-ghost", opponentIsOfficialGhost);
-                const opponentSprite = opponentIsOfficialGhost ? assetUrls.necromancer_ghost : assetUrls.necromancer_stone;
+                // Optimization test: the official ghost reuses the player's own sprite
+                // (mirrored + spectral-tinted via CSS) instead of bespoke necromancer_ghost art.
+                const opponentSprite = opponentIsOfficialGhost ? assetUrls.necromancer_player : assetUrls.necromancer_stone;
                 setCharacterImage(ghostImg, opponentSprite);
             }
 
