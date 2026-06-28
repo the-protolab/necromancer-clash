@@ -1916,19 +1916,32 @@
                     return BLOCK_TYPES.includes(action) ? { type: action, count: 3, direction: "default" } : null;
                 }
                 if (!action || !BLOCK_TYPES.includes(action.type)) return null;
-                const normalized = {
-                    type: action.type,
-                    count: clamp(Number(action.count) || 3, 3, gridSize),
-                    direction: typeof action.direction === "string" ? action.direction : "default"
-                };
-                // Sanitize replay positions: drop out-of-bounds (e.g. recorded on a larger grid)
-                // and non-finite cells. Omit cells entirely if fewer than 2 survive (legacy v2 path).
+                // Sanitize replay positions FIRST: drop out-of-bounds (e.g. recorded on a
+                // larger grid) and non-finite cells. Omit entirely if fewer than 2 survive
+                // (legacy v2 path that stored no cells).
+                let cells = null;
                 if (Array.isArray(action.cells)) {
-                    const cells = action.cells
+                    const sanitized = action.cells
                         .map((c) => ({ row: Number(c && c.row), col: Number(c && c.col) }))
                         .filter((c) => Number.isFinite(c.row) && Number.isFinite(c.col) && inBounds(c.row, c.col));
-                    if (cells.length >= 2) normalized.cells = cells;
+                    if (sanitized.length >= 2) cells = sanitized;
                 }
+                // count IS the damage (actionAmount = count * per). A live selection can
+                // snake through far more than `gridSize` tiles, so the old clamp-to-gridSize
+                // silently nerfed any winning move longer than the board edge — the ghost
+                // then under-hit the move it was supposed to replay exactly. When the path
+                // survived sanitizing, derive count straight from it so count and the
+                // replayed cells can never disagree; otherwise clamp the saved count to a
+                // sane board-area ceiling (legacy saves that carry no cells).
+                const count = (cells && cells.length >= 3)
+                    ? cells.length
+                    : clamp(Number(action.count) || 3, 3, gridSize * gridSize);
+                const normalized = {
+                    type: action.type,
+                    count,
+                    direction: typeof action.direction === "string" ? action.direction : "default"
+                };
+                if (cells) normalized.cells = cells;
                 return normalized;
             }
 
