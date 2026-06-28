@@ -37,6 +37,48 @@
             font: inherit;
         }
 
+        /* Cold-load splash. The % is real: it comes from the core-image preload
+           (loadCoreImages reports done/total). Letters bounce one-by-one via a
+           staggered animation-delay; the whole overlay fades out once the first
+           board has rendered from the now-warm cache. */
+        #loading-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            background: #140d22;
+            font-family: "Jaro", Georgia, "Times New Roman", serif;
+            transition: opacity 0.4s ease;
+        }
+        #loading-overlay.is-done {
+            opacity: 0;
+            pointer-events: none;
+        }
+        #loading-word {
+            display: flex;
+            font-size: clamp(30px, 8vw, 54px);
+            letter-spacing: 0.04em;
+            color: #d9b85c;
+        }
+        #loading-word span {
+            display: inline-block;
+            animation: loading-bounce 1s ease-in-out infinite;
+        }
+        @keyframes loading-bounce {
+            0%, 65%, 100% { transform: translateY(0); }
+            32% { transform: translateY(-0.32em); }
+        }
+        #loading-pct {
+            font-size: clamp(15px, 4vw, 22px);
+            color: #f8f4ea;
+            opacity: 0.8;
+            font-variant-numeric: tabular-nums;
+        }
+
         #game-world {
             --battle-height: 42dvh;
             --gold: #d9b85c;
@@ -1315,6 +1357,10 @@
     </style>
 </head>
 <body>
+    <div id="loading-overlay">
+        <div id="loading-word"><span style="animation-delay:0s">l</span><span style="animation-delay:.07s">o</span><span style="animation-delay:.14s">a</span><span style="animation-delay:.21s">d</span><span style="animation-delay:.28s">i</span><span style="animation-delay:.35s">n</span><span style="animation-delay:.42s">g</span><span style="animation-delay:.49s">.</span><span style="animation-delay:.56s">.</span><span style="animation-delay:.63s">.</span></div>
+        <div id="loading-pct">0%</div>
+    </div>
     <div id="game-world">
         <section id="battlefield">
             <div class="battle-top">
@@ -1562,8 +1608,12 @@
             settings.gridSize = gridSize;
             gridContainer.style.setProperty("--grid-size", String(gridSize));
 
+            const loadingOverlay = document.getElementById("loading-overlay");
+            const loadingPct = document.getElementById("loading-pct");
             const assetUrls = collectAssetUrls();
-            await loadCoreImages(assetUrls);
+            await loadCoreImages(assetUrls, (done, total) => {
+                if (loadingPct) loadingPct.textContent = Math.round(done / total * 100) + "%";
+            });
             applyVisualAssets(assetUrls);
             const vsIcon = document.getElementById("vs-icon");
             if (vsIcon && assetUrls.icon_battle) {
@@ -1605,6 +1655,19 @@
             let editMode = mode === "edit";
 
             await startNewMatch();
+
+            // Wait until every on-screen image is actually DECODED before lifting the
+            // splash. Preloading only warms the HTTP cache; the fresh <img> elements
+            // renderGrid creates still need a per-element decode, and that decode is what
+            // was landing a frame late and causing the pop-in. Now the board/characters
+            // are fully painted underneath the moment the overlay fades.
+            await decodeVisibleImages();
+
+            // Everything underneath is painted — drop the splash.
+            if (loadingOverlay) {
+                loadingOverlay.classList.add("is-done");
+                setTimeout(() => loadingOverlay.remove(), 450);
+            }
 
             if (editMode) {
                 gridContainer.classList.add("locked");
@@ -1718,7 +1781,7 @@
                 return urls;
             }
 
-            async function loadCoreImages(urls) {
+            async function loadCoreImages(urls, onProgress) {
                 const imageIds = [
                     "necromancer_player",
                     "necromancer_stone",
@@ -1727,23 +1790,50 @@
                     "block_shield",
                     "block_ice"
                 ];
-                await Promise.all(imageIds.map((id) => preloadImage(urls[id]).then((ok) => {
-                    if (!ok) urls[id] = "";
+                let done = 0;
+                const total = imageIds.length;
+                if (onProgress) onProgress(0, total);
+                await Promise.all(imageIds.map((id) => preloadImage(urls[id]).then((status) => {
+                    // Only drop a genuinely broken asset. A "timeout" means the image is
+                    // just slow (e.g. the bigger character sprites on throttled 4G) — keep
+                    // its URL so the native <img> still shows it once it finishes loading,
+                    // instead of blanking a perfectly valid URL and hiding the sprite.
+                    if (status === "error") urls[id] = "";
+                    done += 1;
+                    if (onProgress) onProgress(done, total);
                 })));
             }
 
+            // Resolves once every on-screen image has finished decoding (or failed).
+            // decode() is per-<img>, so even cache-warm sprites must decode before they
+            // paint cleanly — awaiting this is what makes the board appear fully formed
+            // under the splash instead of a frame after it lifts.
+            function decodeVisibleImages() {
+                const imgs = Array.from(document.querySelectorAll("#game-world img"));
+                return Promise.all(imgs.map((img) => {
+                    if (!img.getAttribute("src") || typeof img.decode !== "function") return null;
+                    return img.decode().catch(() => {});
+                }));
+            }
+
+            // Resolves "ok" | "error" | "timeout". The timeout only unblocks the start
+            // sequence; it must NOT be treated as a load failure.
             function preloadImage(url) {
-                if (!url) return Promise.resolve(false);
+                if (!url) return Promise.resolve("error");
                 return new Promise((resolve) => {
                     const img = new Image();
-                    const timer = setTimeout(() => resolve(false), 2500);
+                    // Generous cap so the loading % stays faithful: on throttled 4G the
+                    // heavier sprites (e.g. the ~248KB stone) actually finish before this
+                    // fires, instead of being cut off at 2.5s and popping in afterwards.
+                    // Still bounded so a genuinely dead CDN asset can't hang the splash.
+                    const timer = setTimeout(() => resolve("timeout"), 10000);
                     img.onload = () => {
                         clearTimeout(timer);
-                        resolve(true);
+                        resolve("ok");
                     };
                     img.onerror = () => {
                         clearTimeout(timer);
-                        resolve(false);
+                        resolve("error");
                     };
                     img.src = url;
                 });

@@ -18,7 +18,12 @@
       "Bash(grep *)",
       "Bash(python3 -m http.server 8755)",
       "Bash(open \"http://localhost:8755/code.html\")",
-      "Bash(echo \"Servidor rodando em http://localhost:8755/code.html \\(PID $!\\)\")"
+      "Bash(echo \"Servidor rodando em http://localhost:8755/code.html \\(PID $!\\)\")",
+      "Bash(lsof -ti:8000)",
+      "Bash(awk -F: '$1>=1580 && $1<=1700')",
+      "Bash(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/code.html)",
+      "Bash(echo \"HTTP: $\\(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/code.html\\)\")",
+      "Bash(curl -s http://localhost:8000/code.html)"
     ]
   }
 }
