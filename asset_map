@@ -73,14 +73,6 @@ const assets = {
     "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/defeat_sfx_e5bcc56f-111e-42fe-82ad-02811585c76b.mp3",
     "type": "audio"
   },
-  "necromancer_player": {
-    "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782555395927_01KW499HTQFYK8MBGBCQCXAGJ2.necromancer_player.png",
-    "type": "image",
-    "aspect_ratio": [
-      1024,
-      1024
-    ]
-  },
   "necromancer_stone": {
     "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782557742206_01KW4BH53YJMTY6P7ZMFE6YJ8W.necromancer_stone.png",
     "type": "image",
@@ -175,6 +167,14 @@ const assets = {
     "aspect_ratio": [
       807,
       816
+    ]
+  },
+  "necromancer_player": {
+    "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782616522417_01KW63JZNHR19GNFMTRZTASPJH.w_necromancer_player.webp",
+    "type": "image",
+    "aspect_ratio": [
+      1024,
+      1024
     ]
   }
 };

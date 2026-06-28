@@ -94,18 +94,6 @@
             text-shadow: 0 2px 12px rgba(0, 0, 0, 0.72);
         }
 
-        #round-status {
-            justify-self: end;
-            min-height: 30px;
-            max-width: 270px;
-            padding: 4px 0;
-            color: #f7e7b0;
-            font-size: 18px;
-            line-height: 1.2;
-            text-align: right;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
-        }
-
         /* Round indicator, moved here to the top-left of the battlefield. */
         .round-banner {
             align-self: start;
@@ -1107,14 +1095,6 @@
                 display: none;
             }
 
-            #round-status {
-                justify-self: stretch;
-                max-width: none;
-                min-height: 26px;
-                padding: 5px 8px;
-                font-size: 15px;
-            }
-
             .combat-row {
                 inset: 40px 0 0;
                 grid-template-columns: minmax(108px, 1fr) 42px minmax(108px, 1fr);
@@ -1237,10 +1217,9 @@
     <div id="game-world">
         <section id="battlefield">
             <div class="battle-top">
-                <!-- Game title removed. Round indicator lives here (top-left); #round-status
-                     kept (empty by default) for combat narration on the right. -->
+                <!-- Game title removed. Round indicator lives here (top-left). The old
+                     #round-status combat-narration line was removed (always empty). -->
                 <div class="round-banner" id="round-counter">Round 1</div>
-                <div id="round-status"></div>
             </div>
 
             <div class="combat-row">
@@ -1289,7 +1268,7 @@
             <div id="grid-shell">
                 <div id="grid-container" aria-label="Match grid"></div>
             </div>
-            <div class="hint-bar" id="hint-bar">Trace a path of 3+ matching blocks — line, L, or zig-zag.</div>
+            <div class="hint-bar" id="hint-bar"></div>
         </section>
 
         <div id="game-over-screen">
@@ -1303,7 +1282,7 @@
 
     <script>
         const LOCAL_ASSET_URLS = {
-            necromancer_player: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782555395927_01KW499HTQFYK8MBGBCQCXAGJ2.necromancer_player.png",
+            necromancer_player: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782616522417_01KW63JZNHR19GNFMTRZTASPJH.w_necromancer_player.webp",
             necromancer_ghost: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782567693831_01KW4N0VG7SPDZ3FMR8QGGY103.necromancer_ghost.png",
             necromancer_stone: "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782557742206_01KW4BH53YJMTY6P7ZMFE6YJ8W.necromancer_stone.png",
             battlefield_background: "https://d2oir5eh8rty2e.cloudfront.net/assets/images/battlefield_background_604ae7d3-bf7d-47e6-a644-cebbe40d0235.webp",
@@ -1441,7 +1420,6 @@
             const effectLayer = document.getElementById("effect-layer");
             const gridZone = document.getElementById("grid-zone");
             const gridContainer = document.getElementById("grid-container");
-            const roundStatus = document.getElementById("round-status");
             const hintBar = document.getElementById("hint-bar");
             const turnStatus = document.getElementById("turn-status");
             const ghostMoveHint = document.getElementById("ghost-move-hint");
@@ -2199,7 +2177,7 @@
                     selection.invalid = true;
                     updateSelectionMarks();
                 }
-                setMessage("No match — blocks must touch and be the same kind.");
+                setMessage("");
                 setTimeout(clearSelection, 260);
             }
 
@@ -2224,7 +2202,7 @@
 
                 resolving = true;
                 gridContainer.classList.add("locked");
-                setMessage("Round declared.");
+                setMessage("");
                 playSound("block_match_sfx");
 
                 currentRunActions.push(playerAction);
@@ -2956,7 +2934,9 @@
             }
 
             function setMessage(text) {
-                roundStatus.textContent = text;
+                // The top combat-narration line was removed from the UI; this is now a no-op.
+                // Kept so the existing call sites stay valid without edits.
+                void text;
             }
 
             function cloneAction(action) {
