@@ -454,16 +454,16 @@
             position: relative;
             align-self: center;
             justify-self: center;
-            width: 72px;
-            height: 72px;
+            width: 96px;
+            height: 96px;
             display: grid;
             place-items: center;
             /* No circle frame behind the center icon — just the image + the callouts. */
         }
 
         .versus img {
-            width: 80%;
-            height: 80%;
+            width: 100%;
+            height: 100%;
             object-fit: contain;
             filter: drop-shadow(0 0 8px rgba(217, 184, 92, 0.4));
         }
@@ -1336,13 +1336,13 @@
 
             .combat-row {
                 inset: 40px 0 0;
-                grid-template-columns: minmax(108px, 1fr) 42px minmax(108px, 1fr);
+                grid-template-columns: minmax(100px, 1fr) 60px minmax(100px, 1fr);
                 padding: 0 8px 6px;
             }
 
             .versus {
-                width: 40px;
-                height: 40px;
+                width: 60px;
+                height: 60px;
                 font-size: 18px;
             }
 
@@ -1884,6 +1884,10 @@
                         urls[id] = "";
                     }
                 });
+                // The platform-optimized copy of the VS icon comes back low-res and blurs at
+                // the tiny ~57px display size on high-DPI screens. Pin it to the original
+                // high-res PNG everywhere so it stays crisp (locally it already used this).
+                if (LOCAL_ASSET_URLS.icon_battle) urls.icon_battle = LOCAL_ASSET_URLS.icon_battle;
                 return urls;
             }
 
@@ -1973,7 +1977,10 @@
                 const TILE_H = 2 * CELL_H;             // 762  (seamless vertically)
 
                 const loadIcon = (id) => new Promise((resolve) => {
-                    const url = urls[id];
+                    // Composite from the original high-res PNGs, not the platform-optimized
+                    // low-res copies lib.getAsset returns on Astrocade — drawing those at 256px
+                    // upscales them and smudges the whole baked tile. Same fix as the VS icon.
+                    const url = LOCAL_ASSET_URLS[id] || urls[id];
                     if (!url) { resolve(null); return; }
                     const img = new Image();
                     img.crossOrigin = "anonymous";   // CDN sends Access-Control-Allow-Origin:* -> canvas stays untainted
