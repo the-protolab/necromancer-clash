@@ -44,36 +44,49 @@
             /* Shared board width: the grid AND the turn-status line use this so the
                text's left edge lines up exactly with the (centered) grid's left edge. */
             --board-w: min(92vw, max(250px, calc(100dvh - var(--battle-height) - 88px)), 520px);
+            /* Single global patterned background — one continuous, drifting pattern layer
+               behind BOTH the battlefield and the grid (no per-section duplication). */
+            --pattern-tile-w: 609px;
+            --pattern-opacity: 0.05;
+            --pattern-anim-duration: 45s;
+            --app-bg-gradient-from: #2E404F;
+            --app-bg-gradient-to: #1E242F;
             position: relative;
+            isolation: isolate;
             display: grid;
             grid-template-rows: minmax(230px, var(--battle-height)) minmax(0, 1fr);
             width: 100%;
             height: 100dvh;
             min-height: 100%;
             overflow: hidden;
-            background:
-                linear-gradient(180deg, rgba(12, 8, 20, 0.18), rgba(12, 8, 20, 0.74)),
-                radial-gradient(circle at 50% 8%, rgba(57, 129, 157, 0.18), transparent 30%),
-                #140d22;
+            background: linear-gradient(135deg, var(--app-bg-gradient-from) 0%, var(--app-bg-gradient-to) 100%);
+        }
+
+        /* The one and only pattern layer: spans the whole world, drifts seamlessly. */
+        #game-world::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background-image: var(--zone-pattern-image, none);
+            background-repeat: repeat;
+            background-size: var(--pattern-tile-w) auto;
+            opacity: var(--pattern-opacity);
+            animation: zone-pattern-drift var(--pattern-anim-duration) linear infinite;
+        }
+
+        /* Keep both sections above the global pattern layer. */
+        #battlefield,
+        #grid-zone {
+            z-index: 1;
         }
 
         #battlefield {
             position: relative;
-            overflow: hidden;
-            background:
-                linear-gradient(180deg, rgba(16, 10, 26, 0.18), rgba(16, 10, 26, 0.9)),
-                #211432;
-            background-position: center;
-            background-size: cover;
-            border-bottom: 2px solid rgba(217, 184, 92, 0.42);
-        }
-
-        #battlefield::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(90deg, rgba(4, 2, 10, 0.48), transparent 26%, transparent 74%, rgba(4, 2, 10, 0.48));
-            pointer-events: none;
+            /* No overflow:hidden — lets the ghost's glow bleed across the section division
+               instead of being clipped into a hard cut. #game-world still bounds the viewport. */
+            background: transparent; /* global pattern (game-world) shows through, no seam */
         }
 
         .battle-top {
@@ -437,41 +450,14 @@
         }
 
         #grid-zone {
-            /* Patterned background ported from HOC/DungeonBend (.app-screen): diagonal
-               gradient + a drifting pictogram tile. Spacing/colors/motion replicated 1:1
-               from src/Dungeon/View/css/_.bend and scripts/generate-deck-pattern.py. The
-               tile itself is baked client-side into --zone-pattern-image (buildZonePattern). */
-            --pattern-tile-w: 609px;
-            --pattern-opacity: 0.05;
-            --pattern-anim-duration: 45s;
-            --app-bg-gradient-from: #2E404F;
-            --app-bg-gradient-to: #1E242F;
+            /* Transparent: the global drifting pattern now lives on #game-world::before
+               (ported from HOC/DungeonBend; tile baked into --zone-pattern-image). */
             position: relative;
-            isolation: isolate;
             display: grid;
             grid-template-rows: auto minmax(0, 1fr) auto;
             min-height: 0;
             padding: 8px 12px 12px;
-            background: linear-gradient(135deg, var(--app-bg-gradient-from) 0%, var(--app-bg-gradient-to) 100%);
-        }
-
-        #grid-zone::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            z-index: 0;
-            pointer-events: none;
-            background-image: var(--zone-pattern-image, none);
-            background-repeat: repeat;
-            background-size: var(--pattern-tile-w) auto;
-            opacity: var(--pattern-opacity);
-            animation: zone-pattern-drift var(--pattern-anim-duration) linear infinite;
-        }
-
-        /* Keep the real content above the pattern layer (::before is positioned). */
-        #grid-zone > * {
-            position: relative;
-            z-index: 1;
+            background: transparent;
         }
 
         /* tile is 1624x762 -> vertical period / horizontal period = 762/1624 = 0.469211,
@@ -1560,9 +1546,7 @@
             function collectAssetUrls() {
                 const ids = [
                     "necromancer_player",
-                    "necromancer_ghost",
                     "necromancer_stone",
-                    "battlefield_background",
                     "block_sword",
                     "block_heart",
                     "block_shield",
@@ -1600,9 +1584,7 @@
             async function loadCoreImages(urls) {
                 const imageIds = [
                     "necromancer_player",
-                    "necromancer_ghost",
                     "necromancer_stone",
-                    "battlefield_background",
                     "block_sword",
                     "block_heart",
                     "block_shield",
@@ -1631,9 +1613,8 @@
             }
 
             function applyVisualAssets(urls) {
-                if (urls.battlefield_background) {
-                    battlefield.style.backgroundImage = `linear-gradient(180deg, rgba(16, 10, 26, 0.18), rgba(16, 10, 26, 0.9)), url("${urls.battlefield_background}")`;
-                }
+                // Visual test: no battlefield image — the global drifting pattern
+                // (game-world::before) is the only background, continuous behind everything.
                 setCharacterImage(playerImg, urls.necromancer_player);
                 setCharacterImage(ghostImg, urls.necromancer_stone);
             }
@@ -1695,7 +1676,8 @@
 
                     try {
                         const dataUrl = canvas.toDataURL("image/png");
-                        gridZone.style.setProperty("--zone-pattern-image", `url("${dataUrl}")`);
+                        // Set on #game-world so the global ::before pattern layer picks it up.
+                        world.style.setProperty("--zone-pattern-image", `url("${dataUrl}")`);
                     } catch (error) {
                         // Tainted canvas (unexpected CORS failure) -> leave gradient unpatterned.
                     }

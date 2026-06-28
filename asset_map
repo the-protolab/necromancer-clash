@@ -5,14 +5,6 @@
 // Example: lib.getAsset["player_sprite"]
 
 const assets = {
-  "battlefield_background": {
-    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/images/battlefield_background_604ae7d3-bf7d-47e6-a644-cebbe40d0235.webp",
-    "type": "image",
-    "aspect_ratio": [
-      1536,
-      1024
-    ]
-  },
   "block_sword": {
     "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782579075453_01KW4ZW6BXHMF5QK258C79R09G.block_sword.png",
     "type": "image",
@@ -143,14 +135,6 @@ const assets = {
     "aspect_ratio": [
       256,
       256
-    ]
-  },
-  "necromancer_ghost": {
-    "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782567693831_01KW4N0VG7SPDZ3FMR8QGGY103.necromancer_ghost.png",
-    "type": "image",
-    "aspect_ratio": [
-      1024,
-      1024
     ]
   },
   "icon_battle": {
