@@ -540,6 +540,55 @@
         .shout-num.pop { animation: jellyPop 420ms cubic-bezier(0.18, 0.89, 0.32, 1.28); }
         .combo-shout-text.out { animation: jellyPopOut 280ms cubic-bezier(0.6, -0.28, 0.74, 0.05) forwards; }
 
+        /* Victory transition: just a big centered word, styled like the combo shout (same
+           font size + the .shout-name dark outline/solid shadow), in ghost blue with the same
+           spectral cyan glow the player's art gets when it becomes the ghost. No background;
+           it auto-dismisses on its own animation. */
+        .victory-shout {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            z-index: 20;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            text-align: center;
+            max-width: min(88vw, 620px);
+            font-weight: 900;
+            font-size: clamp(38px, 12vw, 78px);
+            line-height: 1.1;
+            letter-spacing: 0.5px;
+            color: #288cdc;
+            animation: victoryShout 2600ms ease forwards,
+                       ghostTextGlow 3.2s ease-in-out infinite;
+        }
+        /* A full phrase (not a single combo word) — let it wrap and stay centered. */
+        .victory-shout .shout-name { display: inline; }
+
+        /* Scale/fade in, hold, then drift up and out — same beats as the old win banner. */
+        @keyframes victoryShout {
+            0%   { opacity: 0; transform: translate(-50%, -42%) scale(0.86); }
+            14%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            78%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -58%) scale(0.97); }
+        }
+
+        /* Breathing cyan halo — the drop-shadow part of the ghost art's spectral glow (the
+           grayscale/sepia tint is omitted so it never desaturates the blue text). */
+        @keyframes ghostTextGlow {
+            0%, 100% {
+                filter:
+                    drop-shadow(0 0 8px rgba(150, 235, 255, 1))
+                    drop-shadow(0 0 18px rgba(120, 220, 255, 0.8))
+                    drop-shadow(0 0 32px rgba(90, 200, 255, 0.5));
+            }
+            50% {
+                filter:
+                    drop-shadow(0 0 12px rgba(170, 240, 255, 1))
+                    drop-shadow(0 0 26px rgba(120, 220, 255, 0.95))
+                    drop-shadow(0 0 46px rgba(90, 200, 255, 0.7));
+            }
+        }
+
         #effect-layer {
             position: absolute;
             z-index: 5;
@@ -1129,45 +1178,6 @@
             100% { transform: scale(1); }
         }
 
-        /* Non-blocking, Xbox-achievement-style banner: informs, never gates input. */
-        .achievement-toast {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            z-index: 20;
-            width: min(460px, 86vw);
-            padding: 18px 22px;
-            border: 2px solid rgba(217, 184, 92, 0.85);
-            border-radius: 10px;
-            background: rgba(15, 10, 24, 0.94);
-            color: #fff8de;
-            text-align: center;
-            box-shadow: 0 0 36px rgba(0, 0, 0, 0.72);
-            pointer-events: none;
-            transform: translate(-50%, -50%);
-            animation: achievementToast 2600ms ease forwards;
-        }
-
-        .achievement-toast .toast-title {
-            margin: 0 0 6px;
-            font-size: 35px;
-            font-weight: 700;
-            color: #98ffbc;
-        }
-
-        .achievement-toast .toast-line {
-            color: #e5d7b7;
-            line-height: 1.5;
-            font-size: 19px;
-        }
-
-        @keyframes achievementToast {
-            0%   { opacity: 0; transform: translate(-50%, -42%) scale(0.86); }
-            14%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-            78%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-            100% { opacity: 0; transform: translate(-50%, -58%) scale(0.97); }
-        }
-
         @media (max-width: 720px), (max-height: 660px) {
             #game-world {
                 --battle-height: 39dvh;
@@ -1398,7 +1408,7 @@
             ice_freeze_sfx: "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/ice_freeze_sfx_fd511a28-f2bd-44c6-aa32-d47e78bf33d2.mp3",
             block_select_sfx: "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/block_select_sfx_ac087039-02ba-4472-9b65-67de8ea0a45c.mp3",
             block_match_sfx: "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/block_match_sfx_cd1722f8-40ea-4901-a581-0915b1700991.mp3",
-            victory_sfx: "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/victory_sfx_4012d81c-3ad4-4f0d-9e47-e49d6e5f8580.mp3",
+            ghost_victory_sfx: "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/ghost_victory_sfx_f64b6620-a035-47b4-95c3-93fb84bd3b72.mp3",
             defeat_sfx: "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/defeat_sfx_e5bcc56f-111e-42fe-82ad-02811585c76b.mp3"
         };
 
@@ -1684,7 +1694,7 @@
                     "ice_freeze_sfx",
                     "block_select_sfx",
                     "block_match_sfx",
-                    "victory_sfx",
+                    "ghost_victory_sfx",
                     "defeat_sfx"
                 ];
                 const urls = {};
@@ -2567,7 +2577,7 @@
                         await soulExtraction();
                     }
                     await saveOfficialGhost();
-                    playSound("victory_sfx");
+                    playSound("ghost_victory_sfx");
                 } else {
                     await clearSavedGhost();
                     playSound("defeat_sfx");
@@ -2586,10 +2596,10 @@
                 }
 
                 if (victory) {
-                    // The game is continuous: inform with a non-blocking banner, then roll
-                    // straight into the next level (now vs the run we just saved) — no click,
-                    // no page reload. The toast keeps fading over the freshly-seeded board.
-                    await showAchievementToast(title, outcomeLine);
+                    // The game is continuous: flash a single victory line, then roll straight
+                    // into the next level (now vs the run we just saved) — no click, no page
+                    // reload. The text keeps fading over the freshly-seeded board.
+                    await showVictoryShout("Now, fight your own ghost.");
                     await startNewMatch();
                     return;
                 }
@@ -3121,23 +3131,19 @@
                 setTimeout(() => node.remove(), lifeMs);
             }
 
-            // Centered, non-blocking win banner. Lives on #game-world (not #effect-layer, which
-            // startNewMatch clears) so it can keep fading over the freshly-seeded next level.
-            // Resolves after a short beat — long enough to read — then the caller continues;
-            // the node fades out on its own animation and self-removes.
-            function showAchievementToast(title, line) {
-                const TOAST_MS = 2600;     // must match the .achievement-toast CSS animation
+            // Victory transition: a single big centered word (combo-shout styling + ghost-blue
+            // glow), no background. Lives on #game-world (not #effect-layer, which startNewMatch
+            // clears) so it keeps fading over the freshly-seeded next level. Resolves after a
+            // short beat; the node finishes its own fade-out animation and self-removes.
+            function showVictoryShout(title) {
+                const TOAST_MS = 2600;     // must match the .victory-shout CSS animation
                 const CONTINUE_MS = 1100;  // when the next level is allowed to start underneath
                 const node = document.createElement("div");
-                node.className = "achievement-toast";
-                const titleEl = document.createElement("div");
-                titleEl.className = "toast-title";
-                titleEl.textContent = title;
-                const lineEl = document.createElement("div");
-                lineEl.className = "toast-line";
-                lineEl.textContent = line;
-                node.appendChild(titleEl);
-                node.appendChild(lineEl);
+                node.className = "victory-shout";
+                const span = document.createElement("span");
+                span.className = "shout-name"; // reuse the outline + solid-shadow text styling
+                span.textContent = title;
+                node.appendChild(span);
                 world.appendChild(node);
                 setTimeout(() => node.remove(), TOAST_MS);
                 return sleep(CONTINUE_MS);

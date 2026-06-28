@@ -160,5 +160,9 @@ const assets = {
       1024,
       1024
     ]
+  },
+  "ghost_victory_sfx": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/ghost_victory_sfx_f64b6620-a035-47b4-95c3-93fb84bd3b72.mp3",
+    "type": "audio"
   }
 };
