@@ -1436,7 +1436,9 @@
 
                     // Hold on the COMPLETED ghost selection (full trail visible) so the
                     // player can fully absorb which tiles were picked, before combat fires.
-                    finalHoldMs: 1500
+                    // Kept short: the rising select-cadence already draws the eye to the
+                    // selection as it traces, so a long static hold here just feels dead.
+                    finalHoldMs: 700
                 },
 
                 // The "ATTACK ×3" / "ICE ×4" callouts that pop above (player) and below
@@ -2184,15 +2186,16 @@
                 const roundNum = ((ghostActionIndex - 1) % total + total) % total + 1;
                 ensureGhostBanner().textContent = `Last run, round ${roundNum}/${total}`;
 
-                playSound("block_select_sfx");
                 renderGhostReplayGrid(ghostAction.type, 0); // black board + banner, nothing revealed
                 await sleep(TIMING.ghost.bannerLeadMs);      // let the banner register first
 
                 renderGhostReplayGrid(ghostAction.type, 1);
+                playSelectNote(0); // ghost retraces its run with the same rising cadence as you
                 await sleep(TIMING.ghost.firstTileMs);
                 for (let i = 2; i <= cells.length; i++) {
                     renderGhostReplayGrid(ghostAction.type, i);
                     drawGhostTrail(cells, i, geo);
+                    playSelectNote(i - 1); // one rising note per revealed tile
                     await sleep(TIMING.ghost.perTileMs);
                 }
                 // Ghost just "finished tracing" -> pop its move callout below the VS bubble.
