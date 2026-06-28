@@ -1878,7 +1878,7 @@
                 trailGeo = computeTrailGeometry(); // read layout once per drag, not per move
                 lastHover = cell;
                 updateSelectionMarks();
-                playSound("block_select_sfx");
+                playSelectNote(0); // base note of the rising select cadence (anchor tile)
             }
 
             function onPointerMove(event) {
@@ -1974,6 +1974,7 @@
                 const block = getBlock(cell.row, cell.col);
                 if (!block || block.type !== firstType) return false;
                 cells.push(cell);
+                playSelectNote(cells.length - 1); // one rising note per tile genuinely added
                 refreshSelectionValidity();
                 return true;
             }
@@ -3001,6 +3002,98 @@
                     audio.play().catch(() => {});
                 } catch (error) {
                     logError("sound failed", error);
+                }
+            }
+
+            // === Procedural select-cadence synth (Web Audio, native, zero deps) ===
+            // Each tile added to a selection plays a rising note in the harmonic-minor
+            // "arcane" voice (4 sine/triangle voices + lowpass, no reverb). Replaces the
+            // single block_select MP3 on the player's drag.
+            const SYNTH = { preset: "arcane", wave: "sawtooth" };
+
+            let actx = null;
+            function ensureAudioCtx() {
+                if (!actx) {
+                    const Ctor = window.AudioContext || window.webkitAudioContext;
+                    if (!Ctor) return null;
+                    actx = new Ctor();
+                }
+                if (actx.state === "suspended") actx.resume();
+                return actx;
+            }
+
+            // original: pentatonic major, single oscillator, base C4
+            const SYNTH_PENTATONIC = [0, 2, 4, 7, 9];
+            function freqOriginal(step) {
+                const oct = Math.floor(step / SYNTH_PENTATONIC.length);
+                const semis = SYNTH_PENTATONIC[((step % SYNTH_PENTATONIC.length) + SYNTH_PENTATONIC.length) % SYNTH_PENTATONIC.length] + oct * 12;
+                return 261.63 * Math.pow(2, semis / 12);
+            }
+            function playOriginal(step, wave) {
+                const ctx = ensureAudioCtx();
+                if (!ctx) return;
+                const now = ctx.currentTime;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = wave;
+                osc.frequency.value = freqOriginal(step);
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(0.22, now + 0.008);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+                osc.connect(gain).connect(ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.2);
+            }
+
+            // arcane / ethereal dry: harmonic minor, 4 voices + lowpass, NO reverb, base A3
+            const SYNTH_MINOR_H = [0, 2, 3, 5, 7, 8, 11];
+            const SYNTH_ARCANE_VOICES = [
+                { t: "sine", oct: 0, det: 0, g: 0.14 },
+                { t: "sine", oct: 0, semi: 6, det: 6, g: 0.07 },
+                { t: "triangle", oct: 1, det: -5, g: 0.05 },
+                { t: "sine", oct: -1, det: 0, g: 0.12 },
+            ];
+            function freqArcane(step) {
+                const oct = Math.floor(step / SYNTH_MINOR_H.length);
+                const semis = SYNTH_MINOR_H[((step % SYNTH_MINOR_H.length) + SYNTH_MINOR_H.length) % SYNTH_MINOR_H.length] + oct * 12;
+                return 220.0 * Math.pow(2, semis / 12);
+            }
+            function playArcane(step) {
+                const ctx = ensureAudioCtx();
+                if (!ctx) return;
+                const now = ctx.currentTime;
+                const base = freqArcane(step);
+                const filter = ctx.createBiquadFilter();
+                filter.type = "lowpass";
+                filter.frequency.value = 4200;
+                filter.Q.value = 1.5;
+                filter.connect(ctx.destination);
+                SYNTH_ARCANE_VOICES.forEach((v) => {
+                    const osc = ctx.createOscillator();
+                    const g = ctx.createGain();
+                    osc.type = v.t;
+                    const semi = v.semi || 0;
+                    osc.frequency.value = base * Math.pow(2, (v.oct * 12 + semi) / 12);
+                    osc.detune.value = v.det;
+                    g.gain.setValueAtTime(0, now);
+                    g.gain.linearRampToValueAtTime(v.g, now + 0.02);
+                    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.7);
+                    osc.connect(g);
+                    g.connect(filter);
+                    osc.start(now);
+                    osc.stop(now + 0.75);
+                });
+            }
+
+            function playSelectNote(step) {
+                try {
+                    if (SYNTH.preset === "arcane") {
+                        playArcane(step);
+                    } else {
+                        playOriginal(step, SYNTH.wave);
+                    }
+                } catch (error) {
+                    /* synth is best-effort; never let audio break input */
                 }
             }
 
