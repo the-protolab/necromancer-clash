@@ -37,14 +37,6 @@ const assets = {
     "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/defeat_sfx_e5bcc56f-111e-42fe-82ad-02811585c76b.mp3",
     "type": "audio"
   },
-  "necromancer_stone": {
-    "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782557742206_01KW4BH53YJMTY6P7ZMFE6YJ8W.necromancer_stone.png",
-    "type": "image",
-    "aspect_ratio": [
-      1024,
-      1024
-    ]
-  },
   "icon_trophy": {
     "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782567020280_01KW4MC9QR3JYJJ78KKZCNHT30.PictoIcon_Trophy 2.png",
     "type": "image",
@@ -159,6 +151,14 @@ const assets = {
     "aspect_ratio": [
       807,
       816
+    ]
+  },
+  "w_necromancer_stone.webp": {
+    "url": "https://dzmv1mxivz48k.cloudfront.net/images/Google_113242356021018268697/1782634809614_01KW6N128E5F3GSGWFN9YTAWKE.w_necromancer_stone.webp",
+    "type": "image",
+    "aspect_ratio": [
+      1024,
+      1024
     ]
   }
 };
