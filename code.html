@@ -217,27 +217,34 @@
             height: 100%;
             width: 0;
             border-radius: 10px 0 0 10px;
-            background: #46a8ff;
-            box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.4),
-                        inset 0 -4px 0 rgba(0, 0, 0, 0.25);
-            transition: width 260ms ease;
+            background: #2563eb;
+            box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.35),
+                        inset 0 -4px 0 rgba(0, 0, 0, 0.3);
+            transition: width 420ms ease;
             pointer-events: none;
             z-index: 2;
         }
 
-        .shield-text {
+        /* Shield value as a big, readable number floating over the character's head.
+           Absolutely positioned (not a grid item) so it never resizes the sprite or
+           pushes layout — it just overlays on top. */
+        .shield-badge {
             position: absolute;
-            right: 6px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 13px;
-            font-weight: 700;
-            color: #eaf6ff;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 7;
+            font-size: clamp(28px, 5vw, 44px);
+            font-weight: 800;
+            color: #8fd2ff;
+            text-shadow:
+                0 0 4px rgba(0, 0, 0, 0.95),
+                0 2px 5px rgba(0, 0, 0, 0.95),
+                0 0 16px rgba(37, 99, 235, 0.9);
             opacity: 0;
             transition: opacity 200ms ease;
             pointer-events: none;
-            z-index: 3;
+            white-space: nowrap;
         }
 
         @keyframes flow {
@@ -1252,10 +1259,11 @@
                             <span>Player</span>
                             <span id="player-hp-text">40 / 40</span>
                         </div>
-                        <div class="hp-track"><div class="hp-fill" id="player-hp-bar"></div><div class="shield-fill" id="player-shield-bar"></div><span class="shield-text" id="player-shield-text"></span></div>
+                        <div class="hp-track"><div class="hp-fill" id="player-hp-bar"></div><div class="shield-fill" id="player-shield-bar"></div></div>
                     </div>
                     <div class="character-wrap">
                         <div class="status-row" id="player-status"></div>
+                        <div class="shield-badge" id="player-shield-text" aria-hidden="true"></div>
                         <img class="character-img" id="player-img" alt="Player">
                     </div>
                 </div>
@@ -1272,10 +1280,11 @@
                             <span id="opponent-name">Opponent</span>
                             <span id="ghost-hp-text">40 / 40</span>
                         </div>
-                        <div class="hp-track"><div class="hp-fill" id="ghost-hp-bar"></div><div class="shield-fill" id="ghost-shield-bar"></div><span class="shield-text" id="ghost-shield-text"></span></div>
+                        <div class="hp-track"><div class="hp-fill" id="ghost-hp-bar"></div><div class="shield-fill" id="ghost-shield-bar"></div></div>
                     </div>
                     <div class="character-wrap">
                         <div class="status-row" id="ghost-status"></div>
+                        <div class="shield-badge" id="ghost-shield-text" aria-hidden="true"></div>
                         <img class="character-img" id="ghost-img" alt="Opponent">
                         <!-- Hint: the spell the ghost will play this round, overlaid bottom-right. -->
                         <div class="ghost-move-hint" id="ghost-move-hint" aria-hidden="true"></div>
@@ -2300,7 +2309,7 @@
                 if (playerHasShield || ghostHasShield) {
                     renderHud();
                     setMessage(`${shieldOwners(playerHasShield, ghostHasShield)} raised a shield!`);
-                    await sleep(320);
+                    await sleep(480);
                 }
 
                 // 3) Resolve flags. Shield no longer blocks; ice always cancels the
@@ -2374,7 +2383,7 @@
                     showBurst(target, "block");
                     floatNumber(target, `-${absorbed}`, "shield");
                     if (targetObj.shield <= 0) shatterShield(targetShield);
-                    await sleep(260);
+                    await sleep(640);
                 }
                 // Leftover damage lands on HP in the same round.
                 if (amount > 0) {
